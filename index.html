@@ -178,18 +178,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .sector-cell-prev{font-size:9px;color:var(--muted);font-family:'Share Tech Mono',monospace;line-height:1;margin-top:1px;}
 
 /* ── LAP LIST ── */
-.laps-header{display:grid;grid-template-columns:26px 1fr 1fr 20px;gap:4px;padding:5px 12px;background:var(--panel);border-bottom:1px solid var(--border);font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;flex-shrink:0;}
-.laps-header span:not(:first-child){text-align:right;}
+.laps-header{display:grid;grid-template-columns:26px 1fr 1fr 20px;gap:4px;padding:5px 12px;background:var(--panel);border-bottom:1px solid var(--border);font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;flex-shrink:0;text-align:center;}
+.laps-header span:first-child{text-align:center;}
 .laps-container{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-.lap-row{display:grid;grid-template-columns:26px 1fr 1fr 20px;gap:4px;padding:7px 12px;border-bottom:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:13px;animation:slideIn .2s ease;}
+.lap-row{display:grid;grid-template-columns:26px 1fr 1fr 20px;gap:4px;padding:7px 12px;border-bottom:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:13px;animation:slideIn .2s ease;text-align:center;}
 @keyframes slideIn{from{opacity:0;transform:translateY(-5px);}to{opacity:1;transform:translateY(0);}}
 .lap-row.best{background:rgba(48,209,88,0.07);}
 .lap-row.worst{background:rgba(255,59,48,0.05);}
-.lap-num{font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--muted);font-weight:600;}
-.lap-time{text-align:right;}
-.lap-delta{text-align:right;font-size:12px;}
+.lap-num{font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--muted);font-weight:600;text-align:center;}
+.lap-time{text-align:center;}
+.lap-delta{text-align:center;font-size:12px;}
 .lap-delta.pos{color:var(--accent2);} .lap-delta.neg{color:var(--accent3);} .lap-delta.zero{color:var(--accent3);}
-.lap-trend{text-align:right;font-size:14px;}
+.lap-trend{text-align:center;font-size:14px;}
 
 /* ── STATS STRIP ── */
 .stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border);flex-shrink:0;}
@@ -1077,21 +1077,22 @@ function recordLap(manual){
   const now=performance.now(),lapMs=now-lapStartTime;
   if(lapMs<3000)return;
 
-  // S3 = time from last sector pin to finish line
+  // Final sector: from last pin crossing to finish line
+  // With 2 pins: S1(start→pin1), S2(pin1→pin2), S3(pin2→finish) → display sectorLive3
+  // With 1 pin:  S1(start→pin1), S2(pin1→finish)                 → display sectorLive2
   if(sectorPins.length>0){
-    const lastSectorIdx=sectorPins.length; // 1-based: S2→idx1, S3→idx2
+    const displayIdx=sectorPins.length+1;
+    const storeIdx=sectorPins.length;
     const finalSectorMs=now-sectorStartTime;
-    currentSectorTimes[lastSectorIdx-1]=finalSectorMs; // S2-only: [0]=S1,[1]=S2-to-finish; S3: [0]=S1,[1]=S2,[2]=S3
-
-    // Compare vs previous lap's final sector
+    currentSectorTimes[storeIdx-1]=finalSectorMs;
     const prevLap=laps[0];
-    const prevMs=prevLap&&prevLap.sectors?prevLap.sectors[lastSectorIdx-1]:null;
+    const prevMs=prevLap&&prevLap.sectors?prevLap.sectors[storeIdx-1]:null;
     const isFaster=prevMs!=null&&finalSectorMs<prevMs;
     const isSlower=prevMs!=null&&finalSectorMs>prevMs;
-    const liveEl=document.getElementById(`sectorLive${lastSectorIdx}`);
+    const liveEl=document.getElementById('sectorLive'+displayIdx);
     if(liveEl){liveEl.textContent=fmtS(finalSectorMs);liveEl.className='sector-cell-val '+(isFaster?'faster':isSlower?'slower':'neutral');}
-    const prevEl=document.getElementById(`sectorPrev${lastSectorIdx}`);
-    if(prevEl) prevEl.textContent=prevMs!=null?`prev: ${fmtS(prevMs)}`:'';
+    const prevEl=document.getElementById('sectorPrev'+displayIdx);
+    if(prevEl)prevEl.textContent=prevMs!=null?'prev: '+fmtS(prevMs):'';
   }
 
   lapStartTime=now; sectorStartTime=now; currentSector=0;
@@ -1111,14 +1112,14 @@ function recordLap(manual){
   if(navigator.vibrate)navigator.vibrate(isBest?[25,15,25]:[40]);
   beepLap(isBest);
 
-  // Keep sector times visible for 2s so driver can see last sector, then reset
+  // Keep sector times visible for 4s so driver can read S3, then reset
   if(sectorPins.length>0){
     setTimeout(()=>{
       for(let i=1;i<=sectorPins.length+1;i++){
         const e=document.getElementById(`sectorLive${i}`);
         if(e){e.textContent='——';e.className='sector-cell-val';}
       }
-    }, 2000);
+    }, 4000);
   }
 }
 
@@ -1171,7 +1172,7 @@ function updateLapList(bestMs,worstMs){
     row.innerHTML=`<div class="lap-num">${laps.length-idx}</div>
       <div class="lap-time">${medal?medal+' ':''}${fmt(lap.ms)}${mtag}</div>
       <div class="lap-delta ${isBest?'zero':d.cls}">${isBest?'BEST':d.text}</div>
-      <div class="lap-trend" style="color:${trendColor};text-align:right;">${idx<laps.length-1&&lap.trend?lap.trend:''}</div>`;
+      <div class="lap-trend" style="color:${trendColor};">${idx<laps.length-1&&lap.trend?lap.trend:''}</div>`;
     c.appendChild(row);
   });
 }
