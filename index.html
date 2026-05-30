@@ -124,9 +124,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .flash-overlay.show{opacity:1;}
 
 /* MODALS */
-.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:200;padding:16px;}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:10000;padding:16px;}
 .modal-backdrop.show{display:flex;}
-.modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:360px;max-height:90dvh;overflow-y:auto;}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:360px;max-height:90dvh;overflow-y:auto;position:relative;z-index:10001;}
 .modal h2{font-size:18px;font-weight:700;letter-spacing:2px;margin-bottom:12px;color:var(--accent);}
 .modal-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
 .modal-stat{background:var(--bg);border-radius:10px;padding:10px;}
@@ -162,6 +162,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .leaflet-container{background:#0d0d0d !important;}
 .leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.85) saturate(.7);}
 .leaflet-control-zoom a{background:var(--panel) !important;color:var(--text) !important;border-color:var(--border) !important;}
+.leaflet-pane { z-index: 400 !important; }
+.leaflet-top, .leaflet-bottom { z-index: 500 !important; }
 
 /* LANDSCAPE */
 @media (orientation:landscape) {
@@ -588,16 +590,16 @@ function recordLap(manual) {
 // FORMAT
 // ══════════════════════════════════════════
 function fmt(ms) {
-  if (ms===null||ms===undefined||ms===Infinity) return '--:--.---';
+  if (ms===null||ms===undefined||ms===Infinity) return '--:--.--';
   const sign=ms<0?'-':'', abs=Math.abs(ms);
-  const m=Math.floor(abs/60000), s=Math.floor((abs%60000)/1000), mil=abs%1000;
-  return `${sign}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(mil).padStart(3,'0')}`;
+  const m=Math.floor(abs/60000), s=Math.floor((abs%60000)/1000), tenth=Math.floor((abs%1000)/100);
+  return `${sign}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${tenth}`;
 }
 function fmtDelta(ms) {
   if (ms===null||ms===undefined) return {text:'---',cls:'neu'};
   const sign=ms<0?'−':'+', abs=Math.abs(ms);
-  const s=Math.floor(abs/1000), mil=abs%1000;
-  return { text:`${sign}${s}.${String(mil).padStart(3,'0')}`, cls:ms<0?'neg':ms>0?'pos':'zero' };
+  const s=Math.floor(abs/1000), tenth=Math.floor((abs%1000)/100);
+  return { text:`${sign}${s}.${tenth}`, cls:ms<0?'neg':ms>0?'pos':'zero' };
 }
 function fmtTotal(ms) {
   const m=Math.floor(ms/60000), s=Math.floor((ms%60000)/1000);
@@ -689,7 +691,7 @@ function showSummary() {
     <div class="modal-stat"><div class="modal-stat-val">${fmt(worst)}</div><div class="modal-stat-lbl">Worst Lap</div></div>
     <div class="modal-stat"><div class="modal-stat-val">${fmtTotal(total)}</div><div class="modal-stat-lbl">Race Time</div></div>
     <div class="modal-stat"><div class="modal-stat-val">${fmt(worst-best)}</div><div class="modal-stat-lbl">Consistency</div></div>`;
-  document.getElementById('summaryModal').classList.add('show');
+  openModal('summaryModal');
 }
 
 function saveAndNew() {
@@ -700,7 +702,16 @@ function saveAndNew() {
   hardReset();
 }
 
-function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function openModal(id) {
+  document.getElementById('setupMap').style.visibility = 'hidden';
+  document.getElementById(id).classList.add('show');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+  // Restore map only if no other modal is open
+  const anyOpen = document.querySelector('.modal-backdrop.show');
+  if (!anyOpen) document.getElementById('setupMap').style.visibility = 'visible';
+}
 
 // ══════════════════════════════════════════
 // SESSION HISTORY (localStorage)
@@ -752,7 +763,7 @@ function showHistoryModal() {
       </div>`).join('');
   }
   document.getElementById('btnClearHistory').style.display = sessions.length ? 'block' : 'none';
-  document.getElementById('historyModal').classList.add('show');
+  openModal('historyModal');
 }
 
 function showSessionDetail(idx) {
@@ -781,7 +792,7 @@ function showSessionDetail(idx) {
   }).join('');
   document.getElementById('detailLaps').innerHTML=lapRows;
   closeModal('historyModal');
-  document.getElementById('detailModal').classList.add('show');
+  openModal('detailModal');
 }
 
 function deleteSession(idx) {
