@@ -45,10 +45,10 @@ body{display:flex;flex-direction:column;height:100dvh;}
 /* SVG kart illustration */
 .kart-svg {
   width: 100%;
-  max-width: 360px;
-  opacity: 0.13;
-  filter: saturate(0);
-  transform: rotate(-8deg) translateY(20px);
+  max-width: 420px;
+  opacity: 0.18;
+  filter: saturate(0.2);
+  transform: translateY(10px);
 }
 
 .landing-noise {
@@ -234,6 +234,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .btn-confirm{background:var(--accent);color:#000;font-size:14px;padding:13px;border-radius:10px;letter-spacing:2px;flex:2;border:none;font-family:'Rajdhani',sans-serif;font-weight:700;text-transform:uppercase;cursor:pointer;}
 .btn-confirm:disabled{background:var(--mid);color:var(--muted);box-shadow:none;}
 .btn-locate{background:var(--mid);color:var(--text);font-size:12px;padding:13px;border-radius:10px;letter-spacing:1px;flex:1;border:none;font-family:'Rajdhani',sans-serif;font-weight:700;text-transform:uppercase;cursor:pointer;}
+
+/* TRACK PRESETS */
+.tracks-row{display:flex;align-items:center;gap:8px;padding:2px 0;}
+.tracks-label{font-size:11px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;white-space:nowrap;flex-shrink:0;}
+.tracks-select{flex:1;background:var(--mid);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;-webkit-appearance:none;appearance:none;outline:none;}
 
 /* ══════════════════════════════════════
    TIMER SCREEN
@@ -561,10 +566,52 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   </div>
   <div class="setup-instruction">
     <strong>Mark the Start / Finish Line</strong>
-    Tap the map exactly where you'll cross the line
+    Pick a track preset below, or tap the map to place manually
   </div>
   <div id="setupMap"></div>
   <div class="setup-footer">
+    <div class="tracks-row">
+      <span class="tracks-label">🏁 Track</span>
+      <select class="tracks-select" id="trackSelect" onchange="selectTrackPreset(this.value)">
+        <option value="">— Select a track preset —</option>
+        <optgroup label="── Norte ──────────────">
+          <option value="41.5868,−8.4447">Kartódromo de Braga (Vasco Sameiro)</option>
+          <option value="41.2362,−8.5089">Kartódromo de Baltar</option>
+          <option value="41.7043,−8.8168">Kartódromo de Viana do Castelo</option>
+          <option value="41.5523,−8.4201">Kartódromo do Cabo do Mundo (Perafita)</option>
+          <option value="41.6883,−7.9258">Kartódromo de Chaves</option>
+          <option value="41.7175,−8.2718">Kartódromo de Fafe (Rilhadas)</option>
+        </optgroup>
+        <optgroup label="── Centro ─────────────">
+          <option value="39.6453,−8.8299">Kartódromo da Batalha (Euroindy)</option>
+          <option value="39.8148,−8.8352">Kartódromo do Bombarral</option>
+          <option value="39.7456,−8.8101">Kartódromo de Leiria</option>
+          <option value="40.2298,−8.4312">Kartódromo de Poiares</option>
+          <option value="39.9158,−8.6270">Kartódromo de Pombal</option>
+          <option value="39.8611,−7.4584">Kartódromo de Castelo Branco</option>
+          <option value="40.2782,−7.5040">Kartódromo da Serra da Estrela</option>
+          <option value="39.3593,−8.1792">Kartódromo de Abrantes</option>
+          <option value="39.4611,−8.6573">Kartódromo de Fátima</option>
+        </optgroup>
+        <optgroup label="── Lisboa / Oeste ──────">
+          <option value="38.9842,−9.0156">Campera Karting (Carregado)</option>
+          <option value="38.9321,−9.1843">Kartódromo do Montijo</option>
+          <option value="39.2652,−9.1726">Kartódromo de Alcanede</option>
+          <option value="38.7352,−9.2211">Kartódromo de Odivelas</option>
+          <option value="38.6970,−9.4240">Kartódromo de Cascais Indoor</option>
+        </optgroup>
+        <optgroup label="── Alentejo / Sul ──────">
+          <option value="38.5789,−8.8279">Kartódromo Internacional de Palmela</option>
+          <option value="38.6897,−8.9404">Kartódromo de Santo André</option>
+          <option value="38.5664,−7.9060">Kartódromo de Évora</option>
+          <option value="39.2943,−7.4286">Kartódromo de Portalegre</option>
+        </optgroup>
+        <optgroup label="── Algarve ─────────────">
+          <option value="37.2218,−8.6253">Kartódromo Internacional do Algarve (Portimão)</option>
+          <option value="37.0812,−7.9990">Kartódromo de Almancil</option>
+        </optgroup>
+      </select>
+    </div>
     <div class="radius-row">
       <span class="radius-label">Trigger radius</span>
       <input type="range" id="radiusSlider" min="3" max="20" value="5" oninput="updateRadius(this.value)">
@@ -753,9 +800,17 @@ function goToSetup() {
 let setupMap, finishMarker, accuracyCircle, userMarker;
 
 function initMap() {
-  setupMap = L.map('setupMap',{zoomControl:true,attributionControl:false});
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(setupMap);
+  setupMap = L.map('setupMap',{zoomControl:true,attributionControl:false,maxZoom:20});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:19}).addTo(setupMap);
   setupMap.on('click',e=>placeFinishLine(e.latlng.lat,e.latlng.lng));
+}
+
+function selectTrackPreset(val) {
+  if (!val) return;
+  // Values use unicode minus − for HTML safety; convert to real minus
+  const [lat, lng] = val.replace(/−/g, '-').split(',').map(Number);
+  setupMap.setView([lat, lng], 19);
+  placeFinishLine(lat, lng);
 }
 
 function placeFinishLine(lat,lng) {
@@ -785,7 +840,7 @@ function changeRaceDuration(delta) {
 }
 
 function centerOnMe() {
-  if(userPos) setupMap.setView([userPos.coords.latitude,userPos.coords.longitude],18);
+  if (userPos) setupMap.setView([userPos.coords.latitude,userPos.coords.longitude],19);
 }
 
 function confirmSetup() {
@@ -843,7 +898,7 @@ function onPosition(pos) {
     if(!userMarker){
       const uIcon=L.divIcon({className:'',html:`<div style="width:14px;height:14px;background:#007aff;border:2px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(0,122,255,.6);"></div>`,iconSize:[14,14],iconAnchor:[7,7]});
       userMarker=L.marker(latlng,{icon:uIcon}).addTo(setupMap);
-      if(!finishLine)setupMap.setView(latlng,18);
+      if(!finishLine)setupMap.setView(latlng,19);
     } else { userMarker.setLatLng(latlng); }
     if(accuracyCircle)accuracyCircle.remove();
     accuracyCircle=L.circle(latlng,{radius:acc,color:'#007aff',fillColor:'#007aff',fillOpacity:.08,weight:1}).addTo(setupMap);
@@ -1179,7 +1234,7 @@ window.addEventListener('load',()=>{
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(pos=>{
       userPos=pos;
-      if(setupMap)setupMap.setView([pos.coords.latitude,pos.coords.longitude],18);
+      if(setupMap)setupMap.setView([pos.coords.latitude,pos.coords.longitude],19);
     },()=>{},{enableHighAccuracy:true,timeout:15000});
     navigator.geolocation.watchPosition(onPosition,onGpsError,{enableHighAccuracy:true,maximumAge:0,timeout:10000});
   }
