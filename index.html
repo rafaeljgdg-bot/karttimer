@@ -465,10 +465,9 @@ function updateRaceCountdownBar(elapsedMs) {
 // GPS
 // ══════════════════════════════════════════
 function startGPSWatch() {
+  // Watch is already running from boot — nothing to do
   if (!navigator.geolocation) { setGpsStatus('error', true); return; }
   setGpsStatus('searching', true);
-  watchId = navigator.geolocation.watchPosition(onPosition, onGpsError,
-    { enableHighAccuracy:true, maximumAge:0, timeout:10000 });
 }
 
 function onPosition(pos) {
@@ -786,17 +785,31 @@ function showSessionDetail(idx) {
 }
 
 function deleteSession(idx) {
-  if (idx<0) return;
-  const sessions=loadHistory();
-  sessions.splice(idx,1);
+  if (idx < 0) return;
+  const btn = document.querySelector('#detailModal .modal-btn-danger');
+  if (btn.dataset.confirm !== 'true') {
+    btn.textContent = 'TAP AGAIN TO DELETE';
+    btn.dataset.confirm = 'true';
+    setTimeout(() => { btn.textContent = 'DELETE'; btn.dataset.confirm = ''; }, 3000);
+    return;
+  }
+  const sessions = loadHistory();
+  sessions.splice(idx, 1);
   saveHistory(sessions);
   closeModal('detailModal');
   showHistoryModal();
 }
 
 function clearHistory() {
-  if (!confirm('Delete all saved sessions?')) return;
+  const btn = document.getElementById('btnClearHistory');
+  if (btn.dataset.confirm !== 'true') {
+    btn.textContent = 'TAP AGAIN TO CONFIRM';
+    btn.dataset.confirm = 'true';
+    setTimeout(() => { btn.textContent = 'CLEAR ALL'; btn.dataset.confirm = ''; }, 3000);
+    return;
+  }
   saveHistory([]);
+  btn.dataset.confirm = '';
   showHistoryModal();
 }
 
@@ -814,13 +827,16 @@ document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState=
 // ══════════════════════════════════════════
 window.addEventListener('load', () => {
   initMap();
+  // Start GPS watch immediately — powers both the setup blue dot and the geofence
   if (navigator.geolocation) {
+    // Quick first fix for map centering
     navigator.geolocation.getCurrentPosition(pos => {
-      userPos=pos;
+      userPos = pos;
       setupMap.setView([pos.coords.latitude, pos.coords.longitude], 18);
-      document.getElementById('setupGpsDot').className='gps-dot locked';
-      document.getElementById('setupGpsLabel').textContent=`GPS ready · ±${Math.round(pos.coords.accuracy)}m`;
     }, ()=>{}, { enableHighAccuracy:true, timeout:15000 });
+    // Full watch — creates blue dot and keeps it updated
+    watchId = navigator.geolocation.watchPosition(onPosition, onGpsError,
+      { enableHighAccuracy:true, maximumAge:0, timeout:10000 });
   }
   // Unlock audio on first touch
   document.addEventListener('touchstart', () => { try { getAudio(); } catch(e){} }, { once:true });
