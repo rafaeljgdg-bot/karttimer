@@ -344,6 +344,51 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .leaflet-pane{z-index:400 !important;}
 .leaflet-top,.leaflet-bottom{z-index:500 !important;}
 
+/* ══════════════════════════════════════
+   TRACKS SCREEN
+══════════════════════════════════════ */
+.screen-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.screen-title{font-size:13px;font-weight:700;letter-spacing:3px;color:var(--text);text-transform:uppercase;}
+
+.tracks-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 16px;}
+.track-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .15s;}
+.track-card:active{opacity:.75;}
+.track-card.has-pin{border-color:rgba(232,255,0,0.3);}
+.track-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
+.track-card-name{font-size:14px;font-weight:700;letter-spacing:1px;color:var(--text);line-height:1.2;}
+.track-card-region{font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-top:2px;}
+.track-pin-status{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0;}
+.track-pin-status.set{color:var(--accent3);background:rgba(48,209,88,0.1);border:1px solid rgba(48,209,88,0.2);}
+.track-pin-status.unset{color:var(--muted);background:var(--mid);}
+.track-card-coords{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);margin-top:4px;}
+
+#trackMap{flex:1;width:100%;background:#0d0d0d;}
+
+.track-edit-footer{padding:10px 16px;padding-bottom:max(10px,env(safe-area-inset-bottom));border-top:1px solid var(--border);background:var(--panel);display:flex;gap:8px;flex-shrink:0;}
+.track-edit-name{font-size:13px;font-weight:700;letter-spacing:1px;color:var(--accent);flex:1;align-self:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* ══════════════════════════════════════
+   NEW SESSION SCREEN
+══════════════════════════════════════ */
+.new-session-body{flex:1;overflow-y:auto;padding:16px;}
+.new-session-section{margin-bottom:20px;}
+.new-session-label{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+.track-pick-list{display:flex;flex-direction:column;gap:8px;}
+.track-pick-item{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:border-color .1s;}
+.track-pick-item:active{opacity:.75;}
+.track-pick-item.selected{border-color:var(--accent);background:rgba(232,255,0,0.05);}
+.track-pick-item.no-pin{opacity:.45;}
+.track-pick-left{display:flex;flex-direction:column;}
+.track-pick-name{font-size:13px;font-weight:700;letter-spacing:1px;color:var(--text);}
+.track-pick-region{font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-top:1px;}
+.track-pick-check{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;}
+.track-pick-item.selected .track-pick-check{background:var(--accent);border-color:var(--accent);color:#000;}
+.track-pick-nopin{font-size:9px;color:var(--muted);letter-spacing:1px;}
+.new-session-go{padding:0 16px;padding-bottom:max(16px,env(safe-area-inset-bottom));flex-shrink:0;}
+.new-session-go-btn{width:100%;padding:16px;background:var(--accent);color:#000;border:none;border-radius:12px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:17px;letter-spacing:3px;text-transform:uppercase;cursor:pointer;}
+.new-session-go-btn:disabled{background:var(--mid);color:var(--muted);}
+.new-session-go-btn:active:not(:disabled){transform:scale(0.97);}
+
 /* LANDSCAPE */
 @media (orientation:landscape) {
   .clock{font-size:clamp(36px,8vw,60px);}
@@ -548,8 +593,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
     </div>
 
     <div class="landing-actions">
-      <button class="landing-btn landing-btn-primary" onclick="goToSetup()">
+      <button class="landing-btn landing-btn-primary" onclick="showScreen('screenNewSession');buildTrackPickList()">
         🏁 &nbsp;NEW SESSION
+      </button>
+      <button class="landing-btn landing-btn-secondary" onclick="showScreen('screenTracks')">
+        📍 &nbsp;MANAGE TRACKS
       </button>
       <button class="landing-btn landing-btn-secondary" onclick="showHistoryFromLanding()">
         📋 &nbsp;SESSION HISTORY
@@ -567,66 +615,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
     <button class="back-btn" onclick="showScreen('screenLanding')">← BACK</button>
   </div>
   <div class="setup-instruction">
-    <strong>Mark the Start / Finish Line</strong>
-    Pick a track preset below, or tap the map to place manually
+    <strong id="setupScreenTitle">Adjust Start / Finish Pin</strong>
+    Tap the map to fine-tune the pin position
   </div>
   <div id="setupMap"></div>
   <div class="setup-footer">
-    <div class="tracks-row">
-      <span class="tracks-label">🏁 Track</span>
-      <select class="tracks-select" id="trackSelect" onchange="selectTrackPreset(this.value)">
-        <option value="">— Select a track preset —</option>
-        <optgroup label="── Norte ──────────────">
-          <option value="41.5868,−8.4447">Kartódromo de Braga (Vasco Sameiro)</option>
-          <option value="41.2362,−8.5089">Kartódromo de Baltar</option>
-          <option value="41.7043,−8.8168">Kartódromo de Viana do Castelo</option>
-          <option value="41.5523,−8.4201">Kartódromo do Cabo do Mundo (Perafita)</option>
-          <option value="41.6883,−7.9258">Kartódromo de Chaves</option>
-          <option value="41.7175,−8.2718">Kartódromo de Fafe (Rilhadas)</option>
-        </optgroup>
-        <optgroup label="── Centro ─────────────">
-          <option value="39.6453,−8.8299">Kartódromo da Batalha (Euroindy)</option>
-          <option value="39.8148,−8.8352">Kartódromo do Bombarral</option>
-          <option value="39.7456,−8.8101">Kartódromo de Leiria</option>
-          <option value="40.2298,−8.4312">Kartódromo de Poiares</option>
-          <option value="39.9158,−8.6270">Kartódromo de Pombal</option>
-          <option value="39.8611,−7.4584">Kartódromo de Castelo Branco</option>
-          <option value="40.2782,−7.5040">Kartódromo da Serra da Estrela</option>
-          <option value="39.3593,−8.1792">Kartódromo de Abrantes</option>
-          <option value="39.4611,−8.6573">Kartódromo de Fátima</option>
-        </optgroup>
-        <optgroup label="── Lisboa / Oeste ──────">
-          <option value="38.9842,−9.0156">Campera Karting (Carregado)</option>
-          <option value="38.9321,−9.1843">Kartódromo do Montijo</option>
-          <option value="39.2652,−9.1726">Kartódromo de Alcanede</option>
-          <option value="38.7352,−9.2211">Kartódromo de Odivelas</option>
-          <option value="38.6970,−9.4240">Kartódromo de Cascais Indoor</option>
-        </optgroup>
-        <optgroup label="── Alentejo / Sul ──────">
-          <option value="38.5789,−8.8279">Kartódromo Internacional de Palmela</option>
-          <option value="38.6897,−8.9404">Kartódromo de Santo André</option>
-          <option value="38.5664,−7.9060">Kartódromo de Évora</option>
-          <option value="39.2943,−7.4286">Kartódromo de Portalegre</option>
-        </optgroup>
-        <optgroup label="── Algarve ─────────────">
-          <option value="37.2218,−8.6253">Kartódromo Internacional do Algarve (Portimão)</option>
-          <option value="37.0812,−7.9990">Kartódromo de Almancil</option>
-        </optgroup>
-      </select>
-    </div>
     <div class="radius-row">
       <span class="radius-label">Trigger radius</span>
-      <input type="range" id="radiusSlider" min="3" max="20" value="5" oninput="updateRadius(this.value)">
-      <span class="radius-val" id="radiusVal">5m</span>
-    </div>
-    <div class="target-row">
-      <span class="target-label">Race duration</span>
-      <div class="target-btns">
-        <button class="target-btn" onclick="changeRaceDuration(-1)">−</button>
-        <span class="target-display" id="targetDisplay">OFF</span>
-        <button class="target-btn" onclick="changeRaceDuration(1)">+</button>
-      </div>
-      <span class="radius-val" id="targetUnit" style="min-width:28px;font-size:11px;color:var(--muted);"></span>
+      <input type="range" id="setupRadiusSlider" min="3" max="20" value="5" oninput="updateRadiusSetup(this.value)">
+      <span class="radius-val" id="setupRadiusVal">5m</span>
     </div>
     <div class="setup-row">
       <div class="gps-status">
@@ -704,6 +701,82 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 </div>
 
 <!-- ══════════════════════════════════════
+     TRACKS SCREEN
+══════════════════════════════════════ -->
+<div class="screen" id="screenTracks">
+  <div class="screen-header">
+    <button class="back-btn" onclick="showScreen('screenLanding')">← BACK</button>
+    <div class="screen-title">Tracks</div>
+    <div style="width:60px;"></div>
+  </div>
+  <div class="tracks-list" id="tracksList"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TRACK EDIT SCREEN (map to set pin)
+══════════════════════════════════════ -->
+<div class="screen" id="screenTrackEdit">
+  <div class="screen-header">
+    <button class="back-btn" onclick="showScreen('screenTracks');renderTracksList()">← BACK</button>
+    <div class="screen-title" id="trackEditTitle">SET START LINE</div>
+    <div style="width:60px;"></div>
+  </div>
+  <div class="setup-instruction">
+    <strong id="trackEditSubtitle">Tap the map to pin the start/finish line</strong>
+    Zoom in as much as needed for precision
+  </div>
+  <div id="trackMap"></div>
+  <div class="track-edit-footer">
+    <div class="gps-status">
+      <div class="gps-dot searching" id="trackEditGpsDot"></div>
+      <span id="trackEditGpsLabel">Acquiring GPS…</span>
+    </div>
+    <button class="btn-locate" onclick="centerTrackMapOnMe()">📍 Me</button>
+    <button class="btn-confirm" id="btnSavePin" disabled onclick="saveTrackPin()">SAVE PIN</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     NEW SESSION SCREEN
+══════════════════════════════════════ -->
+<div class="screen" id="screenNewSession">
+  <div class="screen-header">
+    <button class="back-btn" onclick="showScreen('screenLanding')">← BACK</button>
+    <div class="screen-title">New Session</div>
+    <div style="width:60px;"></div>
+  </div>
+  <div class="new-session-body">
+    <div class="new-session-section">
+      <div class="new-session-label">Select Track</div>
+      <div class="track-pick-list" id="trackPickList"></div>
+    </div>
+    <div class="new-session-section">
+      <div class="new-session-label">Race Duration</div>
+      <div class="target-row" style="padding:0;">
+        <div class="target-btns">
+          <button class="target-btn" onclick="changeRaceDuration(-1)">−</button>
+          <span class="target-display" id="targetDisplay">OFF</span>
+          <button class="target-btn" onclick="changeRaceDuration(1)">+</button>
+        </div>
+        <span class="radius-val" id="targetUnit" style="min-width:28px;font-size:11px;color:var(--muted);margin-left:8px;"></span>
+      </div>
+    </div>
+    <div class="new-session-section">
+      <div class="new-session-label">Trigger Radius</div>
+      <div class="radius-row" style="padding:0;">
+        <input type="range" id="radiusSlider" min="3" max="20" value="5" oninput="updateRadius(this.value)">
+        <span class="radius-val" id="radiusVal">5m</span>
+      </div>
+    </div>
+  </div>
+  <div class="new-session-go">
+    <button class="new-session-go-btn" id="btnGoSession" disabled onclick="startSessionWithSelectedTrack()">
+      GO →
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
      MODALS
 ══════════════════════════════════════ -->
 <div class="modal-backdrop" id="summaryModal">
@@ -734,7 +807,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   </div>
 </div>
 
-<script>
+
 // ════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════
