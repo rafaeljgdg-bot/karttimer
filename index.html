@@ -6,30 +6,209 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="KartTimer">
-<title>KartTimer GPS</title>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<title>KartTimer</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&family=Bebas+Neue&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root {
-  --bg:#0a0a0a; --panel:#111; --border:#1e1e1e;
+  --bg:#080808; --panel:#111; --border:#1e1e1e;
   --accent:#e8ff00; --accent2:#ff3b30; --accent3:#30d158;
-  --text:#f0f0f0; --muted:#555; --mid:#222;
+  --text:#f0f0f0; --muted:#555; --mid:#1e1e1e;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;height:100%;overflow:hidden;touch-action:manipulation;}
 body{display:flex;flex-direction:column;height:100dvh;}
 
-/* SCREENS */
-.screen{display:none;flex-direction:column;height:100%;}
+.screen{display:none;flex-direction:column;height:100%;overflow:hidden;}
 .screen.active{display:flex;}
 
-/* LOGO */
-.logo{font-size:18px;font-weight:700;letter-spacing:3px;color:var(--accent);}
-.logo span{color:var(--text);}
+/* ══════════════════════════════════════
+   LANDING SCREEN
+══════════════════════════════════════ */
+#screenLanding {
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+}
 
-/* SETUP SCREEN */
+.landing-bg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  z-index: 0;
+}
+
+/* SVG kart illustration */
+.kart-svg {
+  width: 100%;
+  max-width: 360px;
+  opacity: 0.13;
+  filter: saturate(0);
+  transform: rotate(-8deg) translateY(20px);
+}
+
+.landing-noise {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Diagonal accent stripe */
+.landing-stripe {
+  position: absolute;
+  top: 0; left: -20%;
+  width: 140%;
+  height: 3px;
+  background: var(--accent);
+  transform: rotate(-4deg) translateY(220px);
+  z-index: 2;
+  box-shadow: 0 0 24px rgba(232,255,0,0.4);
+}
+
+.landing-content {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0 24px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+.landing-top {
+  padding-top: max(52px, env(safe-area-inset-top, 20px));
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.landing-eyebrow {
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.landing-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(72px, 22vw, 100px);
+  line-height: 0.88;
+  color: var(--accent);
+  letter-spacing: 2px;
+  text-shadow: 0 0 60px rgba(232,255,0,0.2);
+}
+.landing-title span {
+  color: var(--text);
+  display: block;
+}
+
+.landing-sub {
+  margin-top: 14px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-transform: uppercase;
+  border-left: 2px solid var(--accent);
+  padding-left: 10px;
+  line-height: 1.6;
+}
+
+.landing-credit {
+  margin-top: 10px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: #333;
+  text-transform: uppercase;
+}
+.landing-credit span { color: #444; }
+
+/* Kart visual */
+.kart-visual {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0 4px;
+}
+
+/* Landing buttons */
+.landing-actions {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 8px;
+}
+
+.landing-btn {
+  border: none;
+  border-radius: 12px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 16px;
+  transition: transform .08s, opacity .1s, box-shadow .2s;
+  user-select: none;
+  -webkit-touch-callout: none;
+  width: 100%;
+}
+.landing-btn:active { transform: scale(0.97); opacity: 0.85; }
+
+.landing-btn-primary {
+  background: var(--accent);
+  color: #000;
+  box-shadow: 0 0 30px rgba(232,255,0,0.25);
+}
+.landing-btn-secondary {
+  background: var(--mid);
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  letter-spacing: 2px;
+  padding: 13px;
+}
+
+/* GPS pill on landing */
+.landing-gps {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+  padding: 8px 0 2px;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.landing-gps-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+.landing-gps-dot.searching { background: #ff9500; animation: pulse 1s infinite; }
+.landing-gps-dot.locked    { background: var(--accent3); animation: pulse 2s infinite; }
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+/* ══════════════════════════════════════
+   SETUP SCREEN
+══════════════════════════════════════ */
 .setup-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.logo{font-size:17px;font-weight:700;letter-spacing:3px;color:var(--accent);}
+.logo span{color:var(--text);}
+.back-btn{font-size:11px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;background:none;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;padding:4px 8px;}
+
 .setup-instruction{padding:8px 16px 6px;font-size:11px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;flex-shrink:0;text-align:center;}
 .setup-instruction strong{color:var(--accent);display:block;font-size:13px;margin-bottom:2px;}
 #setupMap{flex:1;width:100%;background:#0d0d0d;}
@@ -39,23 +218,26 @@ body{display:flex;flex-direction:column;height:100dvh;}
 .gps-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;}
 .gps-dot.searching{background:#ff9500;animation:pulse 1s infinite;}
 .gps-dot.locked{background:var(--accent3);}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
 
-/* RADIUS SLIDER */
 .radius-row{display:flex;align-items:center;gap:10px;padding:4px 0;}
 .radius-label{font-size:11px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;white-space:nowrap;}
 .radius-val{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--accent);min-width:36px;text-align:right;}
 input[type=range]{flex:1;-webkit-appearance:none;height:4px;border-radius:2px;background:var(--mid);outline:none;}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;}
 
-/* LAP TARGET */
 .target-row{display:flex;align-items:center;gap:10px;padding:4px 0;}
 .target-label{font-size:11px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;white-space:nowrap;}
 .target-btns{display:flex;gap:6px;align-items:center;}
-.target-btn{background:var(--mid);color:var(--text);border:none;border-radius:6px;width:28px;height:28px;font-size:16px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.target-btn{background:var(--mid);color:var(--text);border:1px solid var(--border);border-radius:6px;width:28px;height:28px;font-size:16px;font-family:'Rajdhani',sans-serif;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .target-display{font-family:'Share Tech Mono',monospace;font-size:15px;color:var(--accent);min-width:36px;text-align:center;}
 
-/* TIMER SCREEN */
+.btn-confirm{background:var(--accent);color:#000;font-size:14px;padding:13px;border-radius:10px;letter-spacing:2px;flex:2;border:none;font-family:'Rajdhani',sans-serif;font-weight:700;text-transform:uppercase;cursor:pointer;}
+.btn-confirm:disabled{background:var(--mid);color:var(--muted);box-shadow:none;}
+.btn-locate{background:var(--mid);color:var(--text);font-size:12px;padding:13px;border-radius:10px;letter-spacing:1px;flex:1;border:none;font-family:'Rajdhani',sans-serif;font-weight:700;text-transform:uppercase;cursor:pointer;}
+
+/* ══════════════════════════════════════
+   TIMER SCREEN
+══════════════════════════════════════ */
 .header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 6px;border-bottom:1px solid var(--border);flex-shrink:0;}
 .header-left{display:flex;flex-direction:column;}
 .header-right{display:flex;align-items:center;gap:8px;}
@@ -65,7 +247,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .gps-badge .dot.warn{background:#ff9500;animation:pulse 1s infinite;}
 .speed-badge{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--accent);background:var(--mid);border-radius:6px;padding:4px 7px;}
 
-/* LAP COUNTDOWN BAR */
 .lap-countdown{display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 14px;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;}
 .lap-countdown-text{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
 .lap-countdown-val{font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--accent);}
@@ -73,7 +254,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .lap-countdown-val.last1{color:var(--accent2);}
 .lap-countdown-val.done{color:var(--accent3);}
 
-/* CLOCK */
 .clock-section{flex-shrink:0;display:flex;flex-direction:column;align-items:center;padding:8px 16px 6px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#141414 0%,var(--bg) 100%);position:relative;}
 .clock-label{font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:2px;}
 .clock{font-family:'Share Tech Mono',monospace;font-size:clamp(46px,12vw,74px);color:var(--accent);letter-spacing:2px;line-height:1;text-shadow:0 0 30px rgba(232,255,0,0.2);transition:color .15s,text-shadow .15s;}
@@ -86,13 +266,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .delta-val{font-size:15px;}
 .pos{color:var(--accent2);} .neg{color:var(--accent3);} .neu{color:var(--muted);}
 
-/* STATS */
 .stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border);flex-shrink:0;}
 .stat{background:var(--panel);padding:6px;text-align:center;}
 .stat-val{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text);}
 .stat-lbl{font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;}
 
-/* LAPS */
 .laps-header{display:grid;grid-template-columns:28px 1fr 1fr 1fr;gap:4px;padding:5px 12px;background:var(--panel);border-bottom:1px solid var(--border);font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;flex-shrink:0;}
 .laps-header span:not(:first-child){text-align:right;}
 .laps-container{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
@@ -106,7 +284,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .lap-delta.pos{color:var(--accent2);} .lap-delta.neg{color:var(--accent3);} .lap-delta.zero{color:var(--accent3);}
 .lap-split{text-align:right;font-size:12px;color:var(--muted);}
 
-/* CONTROLS */
 .controls{display:grid;grid-template-columns:1fr 2fr 1fr;gap:8px;padding:8px 14px;padding-bottom:max(8px,env(safe-area-inset-bottom));border-top:1px solid var(--border);background:var(--panel);flex-shrink:0;}
 .btn{border:none;border-radius:10px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;padding:12px 8px;transition:transform .08s,opacity .1s;user-select:none;-webkit-touch-callout:none;}
 .btn:active{transform:scale(0.93);opacity:.8;}
@@ -115,7 +292,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .btn-lap:disabled{background:var(--mid);color:var(--muted);box-shadow:none;}
 .btn-setup{background:var(--mid);color:var(--muted);font-size:11px;}
 
-/* LINE INDICATOR */
 .line-indicator{font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;text-align:center;padding:3px 12px;flex-shrink:0;background:var(--bg);border-bottom:1px solid var(--border);}
 .line-indicator span{color:var(--accent3);}
 
@@ -124,7 +300,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .flash-overlay.show{opacity:1;}
 
 /* MODALS */
-.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:10000;padding:16px;}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:10000;padding:16px;}
 .modal-backdrop.show{display:flex;}
 .modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:360px;max-height:90dvh;overflow-y:auto;position:relative;z-index:10001;}
 .modal h2{font-size:18px;font-weight:700;letter-spacing:2px;margin-bottom:12px;color:var(--accent);}
@@ -132,13 +308,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .modal-stat{background:var(--bg);border-radius:10px;padding:10px;}
 .modal-stat-val{font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--accent);}
 .modal-stat-lbl{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
-.modal-btn{width:100%;padding:12px;border-radius:10px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;letter-spacing:2px;text-transform:uppercase;border:none;cursor:pointer;margin-top:8px;}
+.modal-btn{width:100%;padding:13px;border-radius:10px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;letter-spacing:2px;text-transform:uppercase;border:none;cursor:pointer;margin-top:8px;}
+.modal-btn:active{transform:scale(0.97);opacity:.85;}
 .modal-btn-primary{background:var(--accent);color:#000;}
 .modal-btn-secondary{background:var(--mid);color:var(--text);}
-.modal-btn-danger{background:rgba(255,59,48,.15);color:var(--accent2);}
+.modal-btn-danger{background:rgba(255,59,48,.12);color:var(--accent2);border:1px solid rgba(255,59,48,.2);}
 
-/* SESSION HISTORY */
-.history-item{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;}
+/* HISTORY */
+.history-item{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;transition:border-color .15s;}
 .history-item:active{opacity:.7;}
 .history-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
 .history-name{font-size:13px;font-weight:700;letter-spacing:1px;color:var(--text);}
@@ -146,50 +323,241 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .history-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;}
 .history-stat-val{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--accent);}
 .history-stat-lbl{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
-.history-empty{text-align:center;color:var(--muted);font-size:11px;letter-spacing:2px;text-transform:uppercase;padding:20px 0;}
+.history-empty{text-align:center;color:var(--muted);font-size:11px;letter-spacing:2px;text-transform:uppercase;padding:30px 0;}
+.history-empty-icon{font-size:28px;opacity:.2;margin-bottom:8px;}
 
 /* EMPTY */
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:8px;color:var(--muted);font-size:11px;letter-spacing:2px;text-transform:uppercase;padding:20px;text-align:center;}
 .empty-icon{font-size:32px;opacity:.25;}
 
-/* SETUP BUTTONS */
-.btn-confirm{background:var(--accent);color:#000;font-size:14px;padding:13px;border-radius:10px;letter-spacing:2px;flex:2;border:none;font-family:'Rajdhani',sans-serif;font-weight:700;text-transform:uppercase;cursor:pointer;}
-.btn-confirm:disabled{background:var(--mid);color:var(--muted);}
-.btn-locate{background:var(--mid);color:var(--text);font-size:12px;padding:13px;border-radius:10px;letter-spacing:1px;flex:1;border:none;font-family:'Rajdhani',sans-serif;font-weight:700;text-transform:uppercase;cursor:pointer;}
-.btn-history{background:var(--mid);color:var(--muted);font-size:11px;padding:13px;border-radius:10px;letter-spacing:1px;flex:1;border:none;font-family:'Rajdhani',sans-serif;font-weight:700;text-transform:uppercase;cursor:pointer;}
-
-/* LEAFLET DARK */
+/* LEAFLET */
 .leaflet-container{background:#0d0d0d !important;}
 .leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.85) saturate(.7);}
 .leaflet-control-zoom a{background:var(--panel) !important;color:var(--text) !important;border-color:var(--border) !important;}
-.leaflet-pane { z-index: 400 !important; }
-.leaflet-top, .leaflet-bottom { z-index: 500 !important; }
+.leaflet-pane{z-index:400 !important;}
+.leaflet-top,.leaflet-bottom{z-index:500 !important;}
 
 /* LANDSCAPE */
 @media (orientation:landscape) {
   .clock{font-size:clamp(36px,8vw,60px);}
   .clock-section{padding:5px 16px 4px;flex-direction:row;justify-content:space-between;align-items:center;gap:16px;}
-  .clock-section > div:first-child{display:none;}
-  .delta-row{flex-direction:column;gap:6px;margin-top:0;}
+  .clock-section > .clock-label{display:none;}
+  .delta-row{flex-direction:column;gap:4px;margin-top:0;}
   .delta{flex-direction:row;gap:6px;align-items:center;}
   .delta-label{font-size:8px;}
   .delta-val{font-size:13px;}
-  .stats-strip{grid-template-columns:repeat(4,1fr);}
-  .laps-header,.lap-row{grid-template-columns:24px 1fr 1fr 1fr;}
   .controls{padding:6px 14px;padding-bottom:max(6px,env(safe-area-inset-bottom));}
   .btn{padding:10px 8px;}
   .lap-countdown{padding:3px 14px;}
+  .landing-title{font-size:clamp(52px,14vw,72px);}
 }
 </style>
 </head>
 <body>
 <div class="flash-overlay" id="flashOverlay"></div>
 
-<!-- ══════ SETUP SCREEN ══════ -->
-<div class="screen active" id="screenSetup">
+<!-- ══════════════════════════════════════
+     LANDING SCREEN
+══════════════════════════════════════ -->
+<div class="screen active" id="screenLanding">
+  <div class="landing-bg">
+    <!-- Inline SVG kart illustration - side view go kart -->
+    <svg class="kart-svg" viewBox="0 0 520 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+      <!-- Shadow under kart -->
+      <ellipse cx="260" cy="218" rx="200" ry="10" fill="#e8ff00" opacity="0.06"/>
+
+      <!-- Rear axle bar -->
+      <rect x="340" y="148" width="10" height="44" rx="3" fill="#444"/>
+
+      <!-- REAR WHEEL (large, wide go kart style) -->
+      <ellipse cx="370" cy="185" rx="42" ry="42" fill="#1a1a1a" stroke="#333" stroke-width="3"/>
+      <ellipse cx="370" cy="185" rx="32" ry="32" fill="#222"/>
+      <ellipse cx="370" cy="185" rx="18" ry="18" fill="#2a2a2a" stroke="#444" stroke-width="1.5"/>
+      <!-- Tyre grooves rear -->
+      <path d="M330 172 Q332 168 336 165" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M328 185 Q328 180 330 176" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M332 198 Q329 193 330 188" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M342 208 Q338 204 336 199" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M410 172 Q408 168 404 165" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M412 185 Q412 180 410 176" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M408 198 Q411 193 410 188" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- Rear rim spokes -->
+      <line x1="370" y1="167" x2="370" y2="203" stroke="#555" stroke-width="2"/>
+      <line x1="352" y1="175" x2="388" y2="195" stroke="#555" stroke-width="2"/>
+      <line x1="352" y1="195" x2="388" y2="175" stroke="#555" stroke-width="2"/>
+      <ellipse cx="370" cy="185" rx="7" ry="7" fill="#e8ff00" opacity="0.7"/>
+
+      <!-- FRONT WHEEL (smaller) -->
+      <ellipse cx="128" cy="185" rx="32" ry="32" fill="#1a1a1a" stroke="#333" stroke-width="3"/>
+      <ellipse cx="128" cy="185" rx="22" ry="22" fill="#222"/>
+      <ellipse cx="128" cy="185" rx="12" ry="12" fill="#2a2a2a" stroke="#444" stroke-width="1.5"/>
+      <!-- Tyre grooves front -->
+      <path d="M97 173 Q99 169 103 167" stroke="#111" stroke-width="2" stroke-linecap="round"/>
+      <path d="M96 185 Q96 180 98 177" stroke="#111" stroke-width="2" stroke-linecap="round"/>
+      <path d="M100 197 Q97 192 98 188" stroke="#111" stroke-width="2" stroke-linecap="round"/>
+      <path d="M159 173 Q157 169 153 167" stroke="#111" stroke-width="2" stroke-linecap="round"/>
+      <path d="M160 185 Q160 180 158 177" stroke="#111" stroke-width="2" stroke-linecap="round"/>
+      <path d="M156 197 Q159 192 158 188" stroke="#111" stroke-width="2" stroke-linecap="round"/>
+      <!-- Front rim spokes -->
+      <line x1="128" y1="173" x2="128" y2="197" stroke="#555" stroke-width="1.5"/>
+      <line x1="116" y1="179" x2="140" y2="191" stroke="#555" stroke-width="1.5"/>
+      <line x1="116" y1="191" x2="140" y2="179" stroke="#555" stroke-width="1.5"/>
+      <ellipse cx="128" cy="185" rx="5" ry="5" fill="#e8ff00" opacity="0.7"/>
+
+      <!-- Front axle -->
+      <rect x="120" y="152" width="8" height="33" rx="2" fill="#444"/>
+
+      <!-- CHASSIS / FRAME - low flat go kart body -->
+      <path d="M108 158 L155 140 L340 140 L390 152 L400 165 L390 172 L100 172 L90 165 Z" fill="#1c1c1c" stroke="#333" stroke-width="1.5"/>
+
+      <!-- SIDEPOD / BODY PANELS -->
+      <!-- Left bodywork -->
+      <path d="M108 158 L155 142 L155 155 L112 168 Z" fill="#252525" stroke="#2e2e2e" stroke-width="1"/>
+      <!-- Right bodywork -->
+      <path d="M340 142 L388 153 L385 165 L338 155 Z" fill="#252525" stroke="#2e2e2e" stroke-width="1"/>
+
+      <!-- Floor / undertray -->
+      <rect x="108" y="168" width="280" height="8" rx="2" fill="#161616" stroke="#2a2a2a" stroke-width="1"/>
+
+      <!-- SEAT (upright, go kart style - on the right of centre) -->
+      <path d="M255 100 L295 100 L300 142 L250 142 Z" fill="#2a2a2a" stroke="#444" stroke-width="1.5"/>
+      <!-- Seat back detail -->
+      <path d="M258 105 L292 105 L296 138 L254 138 Z" fill="#222" stroke="#333" stroke-width="1"/>
+      <!-- Seat headrest bump -->
+      <path d="M263 100 Q275 92 287 100" fill="#333" stroke="#444" stroke-width="1"/>
+
+      <!-- DRIVER HELMET -->
+      <!-- Neck/shoulders -->
+      <path d="M258 108 Q275 104 292 108 L295 118 L258 118 Z" fill="#e8ff00" opacity="0.85"/>
+      <!-- Helmet dome -->
+      <path d="M255 118 Q256 90 295 90 Q314 90 316 108 Q316 118 295 118 Z" fill="#e8ff00"/>
+      <!-- Visor -->
+      <path d="M262 104 Q275 98 308 104 L310 114 Q295 118 265 114 Z" fill="#0a0a0a" opacity="0.9"/>
+      <!-- Visor shine -->
+      <path d="M267 106 Q278 102 298 106 L299 110 Q284 113 268 110 Z" fill="#fff" opacity="0.08"/>
+      <!-- Helmet stripe -->
+      <rect x="255" y="95" width="61" height="5" rx="2" fill="#ff3b30" opacity="0.7"/>
+
+      <!-- STEERING WHEEL -->
+      <circle cx="235" cy="128" r="16" fill="none" stroke="#444" stroke-width="3"/>
+      <circle cx="235" cy="128" r="6" fill="#333" stroke="#555" stroke-width="2"/>
+      <line x1="235" y1="112" x2="235" y2="122" stroke="#444" stroke-width="2.5"/>
+      <line x1="219" y1="128" x2="229" y2="128" stroke="#444" stroke-width="2.5"/>
+      <line x1="241" y1="128" x2="251" y2="128" stroke="#444" stroke-width="2.5"/>
+
+      <!-- STEERING COLUMN -->
+      <line x1="235" y1="134" x2="235" y2="150" stroke="#333" stroke-width="3"/>
+
+      <!-- NOSE / FRONT BUMPER -->
+      <path d="M90 162 L108 158 L112 168 L90 168 Z" fill="#e8ff00" opacity="0.9"/>
+      <path d="M85 160 L92 158 L94 170 L85 170 Z" fill="#cc0000" opacity="0.6"/>
+
+      <!-- REAR BUMPER -->
+      <path d="M388 153 L406 155 L406 165 L390 165 Z" fill="#e8ff00" opacity="0.9"/>
+
+      <!-- FRONT WING / NOSE CONE -->
+      <path d="M68 162 L95 156 L96 170 L68 170 Z" fill="#333" stroke="#444" stroke-width="1"/>
+      <!-- Front wing endplates -->
+      <rect x="66" y="158" width="4" height="14" rx="1" fill="#444"/>
+      <!-- Front wing main plane -->
+      <path d="M62 163 L97 158 L97 164 L62 166 Z" fill="#2a2a2a" stroke="#3a3a3a" stroke-width="1"/>
+      <!-- Front wing flap -->
+      <path d="M64 166 L96 162 L96 167 L64 168 Z" fill="#222" stroke="#333" stroke-width="0.5"/>
+
+      <!-- REAR WING -->
+      <!-- Main plane -->
+      <path d="M395 130 L450 125 L452 133 L395 138 Z" fill="#2a2a2a" stroke="#3a3a3a" stroke-width="1"/>
+      <!-- Flap -->
+      <path d="M396 138 L451 133 L452 140 L396 144 Z" fill="#222" stroke="#333" stroke-width="0.5"/>
+      <!-- Wing endplates -->
+      <rect x="450" y="124" width="4" height="18" rx="1" fill="#444"/>
+      <rect x="393" y="128" width="4" height="18" rx="1" fill="#444"/>
+      <!-- Wing support strut -->
+      <line x1="400" y1="140" x2="400" y2="155" stroke="#444" stroke-width="2"/>
+      <line x1="445" y1="137" x2="445" y2="153" stroke="#444" stroke-width="2"/>
+
+      <!-- ENGINE / REAR section -->
+      <rect x="320" y="143" width="55" height="22" rx="3" fill="#1e1e1e" stroke="#333" stroke-width="1"/>
+      <!-- Engine cooling fins -->
+      <line x1="328" y1="143" x2="328" y2="165" stroke="#2a2a2a" stroke-width="1.5"/>
+      <line x1="335" y1="143" x2="335" y2="165" stroke="#2a2a2a" stroke-width="1.5"/>
+      <line x1="342" y1="143" x2="342" y2="165" stroke="#2a2a2a" stroke-width="1.5"/>
+      <line x1="349" y1="143" x2="349" y2="165" stroke="#2a2a2a" stroke-width="1.5"/>
+      <line x1="356" y1="143" x2="356" y2="165" stroke="#2a2a2a" stroke-width="1.5"/>
+      <line x1="363" y1="143" x2="363" y2="165" stroke="#2a2a2a" stroke-width="1.5"/>
+
+      <!-- EXHAUST pipe -->
+      <path d="M375 148 Q395 142 415 138 Q428 135 425 142 Q418 148 400 152 Q385 155 375 155 Z" fill="#2a2a2a" stroke="#444" stroke-width="1"/>
+      <!-- Exhaust heat shimmer -->
+      <path d="M425 140 Q432 136 438 132" stroke="#e8ff00" stroke-width="1" opacity="0.2" stroke-linecap="round"/>
+      <path d="M427 144 Q435 140 442 137" stroke="#e8ff00" stroke-width="0.8" opacity="0.15" stroke-linecap="round"/>
+
+      <!-- NUMBER PLATE on nose -->
+      <rect x="90" y="159" width="18" height="10" rx="2" fill="#e8ff00" opacity="0.9"/>
+      <text x="99" y="167" font-family="monospace" font-size="6" font-weight="bold" fill="#000" text-anchor="middle">32</text>
+
+      <!-- Speed lines -->
+      <line x1="18" y1="155" x2="72" y2="155" stroke="#e8ff00" stroke-width="1.5" opacity="0.25"/>
+      <line x1="8" y1="163" x2="66" y2="163" stroke="#e8ff00" stroke-width="2" opacity="0.18"/>
+      <line x1="14" y1="171" x2="68" y2="171" stroke="#e8ff00" stroke-width="1" opacity="0.12"/>
+      <line x1="22" y1="178" x2="65" y2="178" stroke="#e8ff00" stroke-width="0.8" opacity="0.08"/>
+
+      <!-- Ground line -->
+      <line x1="60" y1="210" x2="460" y2="210" stroke="#e8ff00" stroke-width="0.5" opacity="0.1"/>
+
+    </svg>
+  </div>
+  <div class="landing-noise"></div>
+  <div class="landing-stripe"></div>
+
+  <div class="landing-content">
+    <div class="landing-top">
+      <div class="landing-eyebrow">GPS Lap Timer</div>
+      <div class="landing-title">KART<span>TIMER</span></div>
+      <div class="landing-sub">
+        Automatic lap detection<br>
+        Real-time delta tracking
+      </div>
+      <div class="landing-credit">by <span>Rafael Guerreiro</span></div>
+    </div>
+
+    <div class="kart-visual">
+      <!-- decorative dots row -->
+      <div style="display:flex;gap:5px;opacity:0.2;">
+        <div style="width:4px;height:4px;border-radius:50%;background:var(--accent);"></div>
+        <div style="width:4px;height:4px;border-radius:50%;background:var(--accent);"></div>
+        <div style="width:4px;height:4px;border-radius:50%;background:var(--accent);"></div>
+        <div style="width:24px;height:4px;border-radius:2px;background:var(--accent);"></div>
+        <div style="width:4px;height:4px;border-radius:50%;background:var(--accent);"></div>
+        <div style="width:4px;height:4px;border-radius:50%;background:var(--accent);"></div>
+        <div style="width:4px;height:4px;border-radius:50%;background:var(--accent);"></div>
+      </div>
+    </div>
+
+    <div class="landing-gps">
+      <div class="landing-gps-dot searching" id="landingGpsDot"></div>
+      <span id="landingGpsLabel">Acquiring GPS…</span>
+    </div>
+
+    <div class="landing-actions">
+      <button class="landing-btn landing-btn-primary" onclick="goToSetup()">
+        🏁 &nbsp;NEW SESSION
+      </button>
+      <button class="landing-btn landing-btn-secondary" onclick="showHistoryFromLanding()">
+        📋 &nbsp;SESSION HISTORY
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SETUP SCREEN
+══════════════════════════════════════ -->
+<div class="screen" id="screenSetup">
   <div class="setup-header">
     <div class="logo">KART<span>TIMER</span></div>
-    <div style="font-size:11px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;">GPS SETUP</div>
+    <button class="back-btn" onclick="showScreen('screenLanding')">← BACK</button>
   </div>
   <div class="setup-instruction">
     <strong>Mark the Start / Finish Line</strong>
@@ -217,13 +585,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
         <span id="setupGpsLabel">Acquiring GPS…</span>
       </div>
       <button class="btn-locate" onclick="centerOnMe()">📍 Me</button>
-      <button class="btn-history" onclick="showHistoryModal()">📋 History</button>
       <button class="btn-confirm" id="btnConfirm" disabled onclick="confirmSetup()">GO ›</button>
     </div>
   </div>
 </div>
 
-<!-- ══════ TIMER SCREEN ══════ -->
+<!-- ══════════════════════════════════════
+     TIMER SCREEN
+══════════════════════════════════════ -->
 <div class="screen" id="screenTimer">
   <div class="header">
     <div class="header-left">
@@ -249,18 +618,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   <div class="clock-section">
     <div class="auto-badge" id="autoBadge">AUTO</div>
     <div class="clock-label" id="clockLabel">WAITING FOR LINE…</div>
-    <div class="clock" id="clock">00:00.000</div>
+    <div class="clock" id="clock">00:00.00</div>
     <div class="delta-row">
-      <div class="delta"><div class="delta-label">vs BEST</div><div class="delta-val neu" id="deltaBest">---.---</div></div>
-      <div class="delta"><div class="delta-label">vs PREV</div><div class="delta-val neu" id="deltaPrev">---.---</div></div>
-      <div class="delta"><div class="delta-label">vs AVG</div><div class="delta-val neu" id="deltaAvg">---.---</div></div>
+      <div class="delta"><div class="delta-label">vs BEST</div><div class="delta-val neu" id="deltaBest">--.--</div></div>
+      <div class="delta"><div class="delta-label">vs PREV</div><div class="delta-val neu" id="deltaPrev">--.--</div></div>
+      <div class="delta"><div class="delta-label">vs AVG</div><div class="delta-val neu" id="deltaAvg">--.--</div></div>
     </div>
   </div>
 
   <div class="stats-strip">
     <div class="stat"><div class="stat-val" id="statLaps">0</div><div class="stat-lbl">Laps</div></div>
-    <div class="stat"><div class="stat-val" id="statBest">--:--.---</div><div class="stat-lbl">Best</div></div>
-    <div class="stat"><div class="stat-val" id="statAvg">--:--.---</div><div class="stat-lbl">Avg</div></div>
+    <div class="stat"><div class="stat-val" id="statBest">--:--.--</div><div class="stat-lbl">Best</div></div>
+    <div class="stat"><div class="stat-val" id="statAvg">--:--.--</div><div class="stat-lbl">Avg</div></div>
     <div class="stat"><div class="stat-val" id="statTotal">00:00</div><div class="stat-lbl">Total</div></div>
   </div>
 
@@ -281,52 +650,51 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   <div class="controls">
     <button class="btn btn-setup" onclick="goToSetup()">⚙ LINE</button>
     <button class="btn btn-lap" id="btnLap" onclick="recordLap(true)" disabled>LAP</button>
-    <button class="btn btn-secondary" id="btnReset" onclick="resetSession()">RESET</button>
+    <button class="btn btn-secondary" id="btnReset" onclick="resetSession()">END</button>
   </div>
 </div>
 
-<!-- ══════ SUMMARY MODAL ══════ -->
+<!-- ══════════════════════════════════════
+     MODALS
+══════════════════════════════════════ -->
 <div class="modal-backdrop" id="summaryModal">
   <div class="modal">
     <h2>SESSION SUMMARY</h2>
     <div class="modal-stats" id="summaryStats"></div>
-    <button class="modal-btn modal-btn-secondary" onclick="closeModal('summaryModal')">KEEP SESSION</button>
-    <button class="modal-btn modal-btn-primary" onclick="saveAndNew()">SAVE & NEW SESSION</button>
+    <button class="modal-btn modal-btn-primary" onclick="saveSessionAndGoHome()">💾 &nbsp;SAVE SESSION</button>
+    <button class="modal-btn modal-btn-danger" onclick="discardSessionAndGoHome()">🗑 &nbsp;DISCARD</button>
   </div>
 </div>
 
-<!-- ══════ HISTORY MODAL ══════ -->
 <div class="modal-backdrop" id="historyModal">
   <div class="modal">
     <h2>SESSION HISTORY</h2>
     <div id="historyList"></div>
-    <button class="modal-btn modal-btn-secondary" onclick="closeModal('historyModal')">CLOSE</button>
-    <button class="modal-btn modal-btn-danger" id="btnClearHistory" onclick="clearHistory()">CLEAR ALL</button>
+    <button class="modal-btn modal-btn-secondary" onclick="closeHistoryModal()">CLOSE</button>
+    <button class="modal-btn modal-btn-danger" id="btnClearHistory" onclick="clearHistory()" style="display:none;">CLEAR ALL</button>
   </div>
 </div>
 
-<!-- ══════ SESSION DETAIL MODAL ══════ -->
 <div class="modal-backdrop" id="detailModal">
   <div class="modal">
     <h2 id="detailTitle">SESSION DETAIL</h2>
     <div class="modal-stats" id="detailStats"></div>
     <div id="detailLaps" style="margin-bottom:8px;"></div>
-    <button class="modal-btn modal-btn-secondary" onclick="closeModal('detailModal')">CLOSE</button>
-    <button class="modal-btn modal-btn-danger" onclick="deleteSession(currentDetailIdx)">DELETE</button>
+    <button class="modal-btn modal-btn-secondary" onclick="closeModal('detailModal');openModal('historyModal');">← BACK</button>
+    <button class="modal-btn modal-btn-danger" onclick="deleteSession(currentDetailIdx)">DELETE SESSION</button>
   </div>
 </div>
 
 <script>
-// ══════════════════════════════════════════
+// ════════════════════════════════════════
 // STATE
-// ══════════════════════════════════════════
+// ════════════════════════════════════════
 let finishLine   = null;
 let userPos      = null;
-let watchId      = null;
 let lineRadiusM  = 5;
-let raceDurationMs = 0;  // 0 = OFF, otherwise race length in ms
-const DURATION_OPTIONS = [0, 5, 8, 10, 12, 15, 20, 25, 30]; // minutes, 0 = OFF
-let durationIdx = 0;
+let raceDurationMs = 0;
+const DURATION_OPTIONS = [0,5,8,10,12,15,20,25,30];
+let durationIdx  = 0;
 
 let timerRunning = false;
 let lapStartTime = 0;
@@ -340,266 +708,228 @@ let LAP_COOLDOWN_MS = 5000;
 let lastLapTime  = 0;
 let hasStarted   = false;
 let wasInsideZone = false;
-
 let currentDetailIdx = -1;
 
-// Audio context for beep
+// ════════════════════════════════════════
+// AUDIO
+// ════════════════════════════════════════
 let audioCtx = null;
 function getAudio() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
   return audioCtx;
 }
-function beep(freq, dur, vol) {
+function beep(freq,dur,vol) {
   try {
-    const ctx = getAudio();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+    const ctx=getAudio(), osc=ctx.createOscillator(), gain=ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
-    osc.frequency.value = freq;
-    osc.type = 'sine';
-    gain.gain.setValueAtTime(vol||0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + dur);
-  } catch(e) {}
+    osc.frequency.value=freq; osc.type='sine';
+    gain.gain.setValueAtTime(vol||0.3,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime+dur);
+  } catch(e){}
 }
 function beepLap(isBest) {
-  if (isBest) {
-    beep(880, 0.12, 0.4);
-    setTimeout(() => beep(1100, 0.18, 0.35), 120);
-  } else {
-    beep(660, 0.1, 0.3);
-  }
+  if(isBest){beep(880,.12,.4);setTimeout(()=>beep(1100,.18,.35),120);}
+  else beep(660,.1,.3);
 }
-function beepStart() {
-  beep(440, 0.08, 0.25);
-  setTimeout(() => beep(660, 0.15, 0.3), 100);
-}
+function beepStart() { beep(440,.08,.25); setTimeout(()=>beep(660,.15,.3),100); }
 
-// ══════════════════════════════════════════
-// MAP
-// ══════════════════════════════════════════
-let setupMap, finishMarker, accuracyCircle, userMarker;
-
-function initMap() {
-  setupMap = L.map('setupMap', { zoomControl:true, attributionControl:false });
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(setupMap);
-  setupMap.on('click', e => placeFinishLine(e.latlng.lat, e.latlng.lng));
-}
-
-function placeFinishLine(lat, lng) {
-  finishLine = { lat, lng };
-  const icon = L.divIcon({
-    className:'',
-    html:`<div style="width:32px;height:32px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 12px rgba(232,255,0,.6);">🏁</div>`,
-    iconSize:[32,32], iconAnchor:[16,16]
-  });
-  if (finishMarker) finishMarker.remove();
-  finishMarker = L.marker([lat,lng], {icon}).addTo(setupMap);
-  if (window._finishCircle) window._finishCircle.remove();
-  window._finishCircle = L.circle([lat,lng], {
-    radius:lineRadiusM, color:'#e8ff00', fillColor:'#e8ff00',
-    fillOpacity:.08, weight:1.5, dashArray:'4 4'
-  }).addTo(setupMap);
-  document.getElementById('btnConfirm').disabled = false;
-}
-
-function updateRadius(val) {
-  lineRadiusM = parseInt(val);
-  document.getElementById('radiusVal').textContent = val + 'm';
-  if (window._finishCircle) window._finishCircle.setRadius(lineRadiusM);
-  LAP_COOLDOWN_MS = Math.max(3000, lineRadiusM * 600);
-}
-
-function changeRaceDuration(delta) {
-  durationIdx = Math.max(0, Math.min(DURATION_OPTIONS.length - 1, durationIdx + delta));
-  const mins = DURATION_OPTIONS[durationIdx];
-  raceDurationMs = mins * 60000;
-  const disp = document.getElementById('targetDisplay');
-  const unit = document.getElementById('targetUnit');
-  if (mins === 0) { disp.textContent = 'OFF'; unit.textContent = ''; }
-  else { disp.textContent = mins; unit.textContent = 'min'; }
-  updateRaceCountdownBar(0);
-}
-
-function centerOnMe() {
-  if (userPos) setupMap.setView([userPos.coords.latitude, userPos.coords.longitude], 18);
-}
-
-function confirmSetup() {
-  if (!finishLine) return;
-  updateLineIndicator();
-  updateRaceCountdownBar(0);
-  showScreen('screenTimer');
-  startGPSWatch();
+// ════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id==='screenSetup') setTimeout(()=>setupMap&&setupMap.invalidateSize(),100);
 }
 
 function goToSetup() {
   showScreen('screenSetup');
-  if (setupMap) setTimeout(() => setupMap.invalidateSize(), 100);
 }
 
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+// ════════════════════════════════════════
+// MAP
+// ════════════════════════════════════════
+let setupMap, finishMarker, accuracyCircle, userMarker;
+
+function initMap() {
+  setupMap = L.map('setupMap',{zoomControl:true,attributionControl:false});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(setupMap);
+  setupMap.on('click',e=>placeFinishLine(e.latlng.lat,e.latlng.lng));
+}
+
+function placeFinishLine(lat,lng) {
+  finishLine={lat,lng};
+  const icon=L.divIcon({className:'',html:`<div style="width:32px;height:32px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 12px rgba(232,255,0,.6);">🏁</div>`,iconSize:[32,32],iconAnchor:[16,16]});
+  if(finishMarker)finishMarker.remove();
+  finishMarker=L.marker([lat,lng],{icon}).addTo(setupMap);
+  if(window._finishCircle)window._finishCircle.remove();
+  window._finishCircle=L.circle([lat,lng],{radius:lineRadiusM,color:'#e8ff00',fillColor:'#e8ff00',fillOpacity:.08,weight:1.5,dashArray:'4 4'}).addTo(setupMap);
+  document.getElementById('btnConfirm').disabled=false;
+}
+
+function updateRadius(val) {
+  lineRadiusM=parseInt(val);
+  document.getElementById('radiusVal').textContent=val+'m';
+  if(window._finishCircle)window._finishCircle.setRadius(lineRadiusM);
+  LAP_COOLDOWN_MS=Math.max(3000,lineRadiusM*600);
+}
+
+function changeRaceDuration(delta) {
+  durationIdx=Math.max(0,Math.min(DURATION_OPTIONS.length-1,durationIdx+delta));
+  const mins=DURATION_OPTIONS[durationIdx];
+  raceDurationMs=mins*60000;
+  document.getElementById('targetDisplay').textContent=mins===0?'OFF':mins;
+  document.getElementById('targetUnit').textContent=mins===0?'':'min';
+  updateRaceCountdownBar(0);
+}
+
+function centerOnMe() {
+  if(userPos) setupMap.setView([userPos.coords.latitude,userPos.coords.longitude],18);
+}
+
+function confirmSetup() {
+  if(!finishLine)return;
+  updateLineIndicator();
+  updateRaceCountdownBar(0);
+  showScreen('screenTimer');
 }
 
 function updateLineIndicator() {
-  if (!finishLine) return;
-  document.getElementById('lineIndicator').innerHTML =
-    `📍 <span>${finishLine.lat.toFixed(5)}, ${finishLine.lng.toFixed(5)}</span> · ${lineRadiusM}m radius`;
+  if(!finishLine)return;
+  document.getElementById('lineIndicator').innerHTML=`📍 <span>${finishLine.lat.toFixed(5)}, ${finishLine.lng.toFixed(5)}</span> · ${lineRadiusM}m`;
 }
 
 function updateRaceCountdownBar(elapsedMs) {
-  const bar = document.getElementById('lapCountdownBar');
-  if (raceDurationMs === 0) { bar.style.display = 'none'; return; }
-  bar.style.display = 'flex';
-  const remaining = Math.max(0, raceDurationMs - elapsedMs);
-  const mins = Math.floor(remaining / 60000);
-  const secs = Math.floor((remaining % 60000) / 1000);
-  const el = document.getElementById('lapCountdownVal');
-  el.textContent = remaining === 0 ? 'TIME ✓' : `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
-  el.className = 'lap-countdown-val' +
-    (remaining === 0 ? ' done' : remaining <= 10000 ? ' last1' : remaining <= 60000 ? ' last3' : '');
+  const bar=document.getElementById('lapCountdownBar');
+  if(raceDurationMs===0){bar.style.display='none';return;}
+  bar.style.display='flex';
+  const remaining=Math.max(0,raceDurationMs-elapsedMs);
+  const mins=Math.floor(remaining/60000), secs=Math.floor((remaining%60000)/1000);
+  const el=document.getElementById('lapCountdownVal');
+  el.textContent=remaining===0?'TIME ✓':`${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+  el.className='lap-countdown-val'+(remaining===0?' done':remaining<=10000?' last1':remaining<=60000?' last3':'');
 }
 
-// ══════════════════════════════════════════
+// ════════════════════════════════════════
 // GPS
-// ══════════════════════════════════════════
-function startGPSWatch() {
-  // Watch is already running from boot — nothing to do
-  if (!navigator.geolocation) { setGpsStatus('error', true); return; }
-  setGpsStatus('searching', true);
-}
-
+// ════════════════════════════════════════
 function onPosition(pos) {
-  userPos = pos;
-  const acc = pos.coords.accuracy;
-  const spd = pos.coords.speed != null ? pos.coords.speed * 3.6 : 0;
-  const good = acc < 20;
-  setGpsStatus(good ? 'locked' : 'weak', true);
-  document.getElementById('speedBadge').textContent = Math.round(spd) + ' km/h';
+  userPos=pos;
+  const acc=pos.coords.accuracy;
+  const spd=pos.coords.speed!=null?pos.coords.speed*3.6:0;
+  const good=acc<20;
 
-  if (setupMap) {
-    const latlng = [pos.coords.latitude, pos.coords.longitude];
-    if (!userMarker) {
-      const uIcon = L.divIcon({
-        className:'',
-        html:`<div style="width:14px;height:14px;background:#007aff;border:2px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(0,122,255,.6);"></div>`,
-        iconSize:[14,14], iconAnchor:[7,7]
-      });
-      userMarker = L.marker(latlng, {icon:uIcon}).addTo(setupMap);
-      if (!finishLine) setupMap.setView(latlng, 18);
+  // Landing screen GPS dot
+  const ldot=document.getElementById('landingGpsDot');
+  const llbl=document.getElementById('landingGpsLabel');
+  if(ldot){ldot.className='landing-gps-dot '+(good?'locked':'searching');llbl.textContent=good?`GPS ready · ±${Math.round(acc)}m`:`Weak signal · ±${Math.round(acc)}m`;}
+
+  // Setup screen GPS dot
+  const sdot=document.getElementById('setupGpsDot');
+  if(sdot){sdot.className=good?'gps-dot locked':'gps-dot searching';document.getElementById('setupGpsLabel').textContent=good?`GPS locked · ±${Math.round(acc)}m`:`Weak signal · ±${Math.round(acc)}m`;}
+
+  // Timer screen badges
+  const tdot=document.getElementById('timerGpsDot');
+  if(tdot){
+    tdot.className=good?'dot ok':'dot warn';
+    document.getElementById('timerGpsLabel').textContent=good?'GPS':'WEAK';
+    document.getElementById('speedBadge').textContent=Math.round(spd)+' km/h';
+  }
+
+  // Map blue dot
+  if(setupMap) {
+    const latlng=[pos.coords.latitude,pos.coords.longitude];
+    if(!userMarker){
+      const uIcon=L.divIcon({className:'',html:`<div style="width:14px;height:14px;background:#007aff;border:2px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(0,122,255,.6);"></div>`,iconSize:[14,14],iconAnchor:[7,7]});
+      userMarker=L.marker(latlng,{icon:uIcon}).addTo(setupMap);
+      if(!finishLine)setupMap.setView(latlng,18);
     } else { userMarker.setLatLng(latlng); }
-    if (accuracyCircle) accuracyCircle.remove();
-    accuracyCircle = L.circle(latlng, {radius:acc, color:'#007aff', fillColor:'#007aff', fillOpacity:.08, weight:1}).addTo(setupMap);
-    document.getElementById('setupGpsDot').className = good ? 'gps-dot locked' : 'gps-dot searching';
-    document.getElementById('setupGpsLabel').textContent = good ? `GPS locked · ±${Math.round(acc)}m` : `Weak signal · ±${Math.round(acc)}m`;
+    if(accuracyCircle)accuracyCircle.remove();
+    accuracyCircle=L.circle(latlng,{radius:acc,color:'#007aff',fillColor:'#007aff',fillOpacity:.08,weight:1}).addTo(setupMap);
   }
 
-  if (finishLine && document.getElementById('screenTimer').classList.contains('active')) {
-    checkGeofence(pos);
-  }
+  // Geofence check
+  if(finishLine&&document.getElementById('screenTimer').classList.contains('active')) checkGeofence(pos);
 }
 
-function onGpsError() { setGpsStatus('error', true); }
+function onGpsError() {}
 
-function setGpsStatus(state, onTimer) {
-  if (!onTimer) return;
-  const dot = document.getElementById('timerGpsDot');
-  const lbl = document.getElementById('timerGpsLabel');
-  if (state==='locked') { dot.className='dot ok'; lbl.textContent='GPS'; }
-  else if (state==='weak'||state==='searching') { dot.className='dot warn'; lbl.textContent='WEAK'; }
-  else { dot.className='dot'; lbl.textContent='NO GPS'; }
-}
-
-// ══════════════════════════════════════════
+// ════════════════════════════════════════
 // GEOFENCE
-// ══════════════════════════════════════════
+// ════════════════════════════════════════
 function haversine(lat1,lon1,lat2,lon2) {
-  const R=6371000, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
+  const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
   const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
 function checkGeofence(pos) {
-  const dist = haversine(pos.coords.latitude, pos.coords.longitude, finishLine.lat, finishLine.lng);
-  const inside = dist <= lineRadiusM;
-  const now = Date.now();
-  if (inside && !wasInsideZone) {
-    if (!hasStarted) {
-      hasStarted = true;
-      autoStartTimer();
-    } else if (timerRunning && (now - lastLapTime) > LAP_COOLDOWN_MS) {
-      lastLapTime = now;
-      recordLap(false);
-    }
+  const dist=haversine(pos.coords.latitude,pos.coords.longitude,finishLine.lat,finishLine.lng);
+  const inside=dist<=lineRadiusM, now=Date.now();
+  if(inside&&!wasInsideZone) {
+    if(!hasStarted){hasStarted=true;autoStartTimer();}
+    else if(timerRunning&&(now-lastLapTime)>LAP_COOLDOWN_MS){lastLapTime=now;recordLap(false);}
   }
-  wasInsideZone = inside;
+  wasInsideZone=inside;
 }
 
-// ══════════════════════════════════════════
+// ════════════════════════════════════════
 // TIMER
-// ══════════════════════════════════════════
+// ════════════════════════════════════════
 function autoStartTimer() {
-  timerRunning = true;
-  lapStartTime = performance.now();
-  lastLapTime = Date.now();
-  document.getElementById('clockLabel').textContent = 'CURRENT LAP';
+  timerRunning=true; lapStartTime=performance.now(); lastLapTime=Date.now();
+  document.getElementById('clockLabel').textContent='CURRENT LAP';
   document.getElementById('autoBadge').classList.add('show');
-  document.getElementById('btnLap').disabled = false;
-  setTimeout(() => document.getElementById('autoBadge').classList.remove('show'), 2500);
-  if (navigator.vibrate) navigator.vibrate([20,10,20]);
+  document.getElementById('btnLap').disabled=false;
+  setTimeout(()=>document.getElementById('autoBadge').classList.remove('show'),2500);
+  if(navigator.vibrate)navigator.vibrate([20,10,20]);
   beepStart();
-  animFrame = requestAnimationFrame(tick);
+  animFrame=requestAnimationFrame(tick);
 }
 
 function tick() {
-  if (!timerRunning) return;
-  lapElapsed = performance.now() - lapStartTime;
+  if(!timerRunning)return;
+  lapElapsed=performance.now()-lapStartTime;
   updateClock(lapElapsed);
   updateDeltas(lapElapsed);
-  const total = laps.reduce((s,l)=>s+l.ms,0) + lapElapsed;
-  document.getElementById('statTotal').textContent = fmtTotal(total);
+  const total=laps.reduce((s,l)=>s+l.ms,0)+lapElapsed;
+  document.getElementById('statTotal').textContent=fmtTotal(total);
   updateRaceCountdownBar(total);
-  animFrame = requestAnimationFrame(tick);
+  animFrame=requestAnimationFrame(tick);
 }
 
 function recordLap(manual) {
-  if (!timerRunning) return;
-  const now = performance.now();
-  const lapMs = now - lapStartTime;
-  if (lapMs < 3000) return;
-  lapStartTime = now;
-
-  const isBest = lapMs < bestLapMs;
-  if (isBest) { bestLapMs = lapMs; flashScreen(); }
-
-  const runningTotal = laps.reduce((s,l)=>s+l.ms,0) + lapMs;
-  laps.unshift({ ms:lapMs, total:runningTotal, num:laps.length+1, manual });
-
-  const sortedMs = laps.map(l=>l.ms).sort((a,b)=>a-b);
-  updateLapList(sortedMs[0], sortedMs[sortedMs.length-1]);
+  if(!timerRunning)return;
+  const now=performance.now(), lapMs=now-lapStartTime;
+  if(lapMs<3000)return;
+  lapStartTime=now;
+  const isBest=lapMs<bestLapMs;
+  if(isBest){bestLapMs=lapMs;flashScreen();}
+  const runningTotal=laps.reduce((s,l)=>s+l.ms,0)+lapMs;
+  laps.unshift({ms:lapMs,total:runningTotal,num:laps.length+1,manual});
+  const sortedMs=laps.map(l=>l.ms).sort((a,b)=>a-b);
+  updateLapList(sortedMs[0],sortedMs[sortedMs.length-1]);
   updateStats(sortedMs[0]);
-
-  if (navigator.vibrate) navigator.vibrate(isBest ? [25,15,25] : [40]);
+  if(navigator.vibrate)navigator.vibrate(isBest?[25,15,25]:[40]);
   beepLap(isBest);
 }
 
-// ══════════════════════════════════════════
-// FORMAT
-// ══════════════════════════════════════════
+// ════════════════════════════════════════
+// FORMAT (2 decimal places)
+// ════════════════════════════════════════
 function fmt(ms) {
-  if (ms===null||ms===undefined||ms===Infinity) return '--:--.--';
+  if(ms===null||ms===undefined||ms===Infinity)return '--:--.--';
   const sign=ms<0?'-':'', abs=Math.abs(ms);
-  const m=Math.floor(abs/60000), s=Math.floor((abs%60000)/1000), tenth=Math.floor((abs%1000)/100);
-  return `${sign}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${tenth}`;
+  const m=Math.floor(abs/60000), s=Math.floor((abs%60000)/1000);
+  const cents=Math.floor((abs%1000)/10);
+  return `${sign}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(cents).padStart(2,'0')}`;
 }
 function fmtDelta(ms) {
-  if (ms===null||ms===undefined) return {text:'---',cls:'neu'};
+  if(ms===null||ms===undefined)return{text:'--.--',cls:'neu'};
   const sign=ms<0?'−':'+', abs=Math.abs(ms);
-  const s=Math.floor(abs/1000), tenth=Math.floor((abs%1000)/100);
-  return { text:`${sign}${s}.${tenth}`, cls:ms<0?'neg':ms>0?'pos':'zero' };
+  const s=Math.floor(abs/1000), cents=Math.floor((abs%1000)/10);
+  return{text:`${sign}${s}.${String(cents).padStart(2,'0')}`,cls:ms<0?'neg':ms>0?'pos':'zero'};
 }
 function fmtTotal(ms) {
   const m=Math.floor(ms/60000), s=Math.floor((ms%60000)/1000);
@@ -613,21 +943,20 @@ function updateClock(ms) {
 }
 function updateDeltas(cur) {
   const db=document.getElementById('deltaBest');
-  if (laps.length>0&&bestLapMs!==Infinity) { const d=fmtDelta(cur-bestLapMs); db.textContent=d.text; db.className='delta-val '+d.cls; }
-  else { db.textContent='---.---'; db.className='delta-val neu'; }
+  if(laps.length>0&&bestLapMs!==Infinity){const d=fmtDelta(cur-bestLapMs);db.textContent=d.text;db.className='delta-val '+d.cls;}
+  else{db.textContent='--.--';db.className='delta-val neu';}
   const dp=document.getElementById('deltaPrev');
-  if (laps.length>0) { const d=fmtDelta(cur-laps[0].ms); dp.textContent=d.text; dp.className='delta-val '+d.cls; }
-  else { dp.textContent='---.---'; dp.className='delta-val neu'; }
+  if(laps.length>0){const d=fmtDelta(cur-laps[0].ms);dp.textContent=d.text;dp.className='delta-val '+d.cls;}
+  else{dp.textContent='--.--';dp.className='delta-val neu';}
   const da=document.getElementById('deltaAvg');
-  if (laps.length>0) { const avg=laps.reduce((s,l)=>s+l.ms,0)/laps.length; const d=fmtDelta(cur-avg); da.textContent=d.text; da.className='delta-val '+d.cls; }
-  else { da.textContent='---.---'; da.className='delta-val neu'; }
+  if(laps.length>0){const avg=laps.reduce((s,l)=>s+l.ms,0)/laps.length;const d=fmtDelta(cur-avg);da.textContent=d.text;da.className='delta-val '+d.cls;}
+  else{da.textContent='--.--';da.className='delta-val neu';}
 }
-function updateLapList(bestMs, worstMs) {
+function updateLapList(bestMs,worstMs) {
   document.getElementById('emptyState')?.remove();
-  const c=document.getElementById('lapsContainer');
-  c.innerHTML='';
-  laps.forEach((lap,idx) => {
-    const isBest=lap.ms===bestMs, isWorst=lap.ms===worstMs&&laps.length>1;
+  const c=document.getElementById('lapsContainer');c.innerHTML='';
+  laps.forEach((lap,idx)=>{
+    const isBest=lap.ms===bestMs,isWorst=lap.ms===worstMs&&laps.length>1;
     const row=document.createElement('div');
     row.className='lap-row'+(isBest?' best':isWorst?' worst':'');
     const d=fmtDelta(isBest?0:lap.ms-bestMs);
@@ -641,49 +970,50 @@ function updateLapList(bestMs, worstMs) {
   });
 }
 function updateStats(bestMs) {
-  const n=laps.length, avg=laps.reduce((s,l)=>s+l.ms,0)/n;
+  const n=laps.length,avg=laps.reduce((s,l)=>s+l.ms,0)/n;
   document.getElementById('statLaps').textContent=n;
   document.getElementById('statBest').textContent=fmt(bestMs);
   document.getElementById('statAvg').textContent=fmt(avg);
 }
 function flashScreen() {
   const o=document.getElementById('flashOverlay');
-  o.classList.add('show'); setTimeout(()=>o.classList.remove('show'),200);
+  o.classList.add('show');setTimeout(()=>o.classList.remove('show'),200);
 }
 
-// ══════════════════════════════════════════
-// SESSION MGMT
-// ══════════════════════════════════════════
+// ════════════════════════════════════════
+// SESSION MANAGEMENT
+// ════════════════════════════════════════
 function resetSession() {
-  if (laps.length>0) { showSummary(); return; }
+  if(laps.length>0){showSummary();return;}
   hardReset();
+  showScreen('screenLanding');
 }
 
 function hardReset() {
-  timerRunning=false; cancelAnimationFrame(animFrame);
-  lapStartTime=0; lapElapsed=0; laps=[]; bestLapMs=Infinity;
-  hasStarted=false; wasInsideZone=false; lastLapTime=0;
-  document.getElementById('clock').textContent='00:00.000';
+  timerRunning=false;cancelAnimationFrame(animFrame);
+  lapStartTime=0;lapElapsed=0;laps=[];bestLapMs=Infinity;
+  hasStarted=false;wasInsideZone=false;lastLapTime=0;
+  document.getElementById('clock').textContent='00:00.00';
   document.getElementById('clock').className='clock';
   document.getElementById('clockLabel').textContent='WAITING FOR LINE…';
   document.getElementById('btnLap').disabled=true;
   ['deltaBest','deltaPrev','deltaAvg'].forEach(id=>{
-    document.getElementById(id).textContent='---.---';
+    document.getElementById(id).textContent='--.--';
     document.getElementById(id).className='delta-val neu';
   });
   document.getElementById('statLaps').textContent='0';
-  document.getElementById('statBest').textContent='--:--.---';
-  document.getElementById('statAvg').textContent='--:--.---';
+  document.getElementById('statBest').textContent='--:--.--';
+  document.getElementById('statAvg').textContent='--:--.--';
   document.getElementById('statTotal').textContent='00:00';
   document.getElementById('lapsContainer').innerHTML=`<div class="empty" id="emptyState"><div class="empty-icon">🏁</div><div>Drive to the start line —<br>timer begins automatically</div></div>`;
   updateRaceCountdownBar(0);
 }
 
 function showSummary() {
-  const n=laps.length; if(!n) return;
+  const n=laps.length;if(!n)return;
   const sorted=[...laps].map(l=>l.ms).sort((a,b)=>a-b);
-  const best=sorted[0], worst=sorted[sorted.length-1];
-  const avg=laps.reduce((s,l)=>s+l.ms,0)/n, total=laps.reduce((s,l)=>s+l.ms,0);
+  const best=sorted[0],worst=sorted[sorted.length-1];
+  const avg=laps.reduce((s,l)=>s+l.ms,0)/n,total=laps.reduce((s,l)=>s+l.ms,0);
   document.getElementById('summaryStats').innerHTML=`
     <div class="modal-stat"><div class="modal-stat-val">${n}</div><div class="modal-stat-lbl">Laps</div></div>
     <div class="modal-stat"><div class="modal-stat-val">${fmt(best)}</div><div class="modal-stat-lbl">Best Lap</div></div>
@@ -694,62 +1024,78 @@ function showSummary() {
   openModal('summaryModal');
 }
 
-function saveAndNew() {
+function saveSessionAndGoHome() {
   saveSession();
   sessionNum++;
   document.getElementById('sessionLabel').textContent=`SESSION ${sessionNum}`;
   closeModal('summaryModal');
   hardReset();
+  showScreen('screenLanding');
 }
 
+function discardSessionAndGoHome() {
+  const btn=document.querySelector('#summaryModal .modal-btn-danger');
+  if(btn.dataset.confirm!=='true'){
+    btn.textContent='TAP AGAIN TO DISCARD';
+    btn.dataset.confirm='true';
+    setTimeout(()=>{btn.textContent='🗑 DISCARD';btn.dataset.confirm='';},3000);
+    return;
+  }
+  closeModal('summaryModal');
+  hardReset();
+  showScreen('screenLanding');
+}
+
+// ════════════════════════════════════════
+// MODALS
+// ════════════════════════════════════════
 function openModal(id) {
-  document.getElementById('setupMap').style.visibility = 'hidden';
+  // Hide map to prevent Leaflet z-index bleed
+  const m=document.getElementById('setupMap');
+  if(m)m.style.visibility='hidden';
   document.getElementById(id).classList.add('show');
 }
 function closeModal(id) {
   document.getElementById(id).classList.remove('show');
-  // Restore map only if no other modal is open
-  const anyOpen = document.querySelector('.modal-backdrop.show');
-  if (!anyOpen) document.getElementById('setupMap').style.visibility = 'visible';
+  if(!document.querySelector('.modal-backdrop.show')){
+    const m=document.getElementById('setupMap');
+    if(m)m.style.visibility='visible';
+  }
 }
 
-// ══════════════════════════════════════════
-// SESSION HISTORY (localStorage)
-// ══════════════════════════════════════════
-function loadHistory() {
-  try { return JSON.parse(localStorage.getItem('kt_sessions')||'[]'); } catch(e) { return []; }
-}
-function saveHistory(sessions) {
-  try { localStorage.setItem('kt_sessions', JSON.stringify(sessions)); } catch(e) {}
-}
+// ════════════════════════════════════════
+// SESSION HISTORY
+// ════════════════════════════════════════
+function loadHistory(){try{return JSON.parse(localStorage.getItem('kt_sessions')||'[]');}catch(e){return[];}}
+function saveHistory(s){try{localStorage.setItem('kt_sessions',JSON.stringify(s));}catch(e){}}
 
 function saveSession() {
-  if (!laps.length) return;
+  if(!laps.length)return;
   const sorted=[...laps].map(l=>l.ms).sort((a,b)=>a-b);
-  const session = {
-    name: `Session ${sessionNum}`,
-    date: new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),
-    time: new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
-    laps: [...laps],
-    best: sorted[0],
-    worst: sorted[sorted.length-1],
-    avg: Math.round(laps.reduce((s,l)=>s+l.ms,0)/laps.length),
-    total: laps.reduce((s,l)=>s+l.ms,0),
-    count: laps.length
+  const session={
+    name:`Session ${sessionNum}`,
+    date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),
+    time:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
+    laps:[...laps],best:sorted[0],worst:sorted[sorted.length-1],
+    avg:Math.round(laps.reduce((s,l)=>s+l.ms,0)/laps.length),
+    total:laps.reduce((s,l)=>s+l.ms,0),count:laps.length
   };
-  const sessions = loadHistory();
-  sessions.unshift(session);
-  if (sessions.length > 50) sessions.pop(); // keep last 50
+  const sessions=loadHistory();sessions.unshift(session);
+  if(sessions.length>50)sessions.pop();
   saveHistory(sessions);
 }
 
+function showHistoryFromLanding() {
+  showHistoryModal();
+}
+
 function showHistoryModal() {
-  const sessions = loadHistory();
-  const list = document.getElementById('historyList');
-  if (!sessions.length) {
-    list.innerHTML='<div class="history-empty">No sessions saved yet</div>';
+  const sessions=loadHistory();
+  const list=document.getElementById('historyList');
+  if(!sessions.length){
+    list.innerHTML='<div class="history-empty"><div class="history-empty-icon">📋</div>No sessions saved yet</div>';
   } else {
-    list.innerHTML = sessions.map((s,i) => `
+    list.innerHTML=sessions.map((s,i)=>`
       <div class="history-item" onclick="showSessionDetail(${i})">
         <div class="history-header">
           <span class="history-name">${s.name}</span>
@@ -762,15 +1108,18 @@ function showHistoryModal() {
         </div>
       </div>`).join('');
   }
-  document.getElementById('btnClearHistory').style.display = sessions.length ? 'block' : 'none';
+  document.getElementById('btnClearHistory').style.display=sessions.length?'block':'none';
   openModal('historyModal');
 }
 
+function closeHistoryModal() {
+  closeModal('historyModal');
+}
+
 function showSessionDetail(idx) {
-  const sessions = loadHistory();
-  const s = sessions[idx];
-  currentDetailIdx = idx;
-  document.getElementById('detailTitle').textContent = s.name.toUpperCase();
+  const sessions=loadHistory(), s=sessions[idx];
+  currentDetailIdx=idx;
+  document.getElementById('detailTitle').textContent=s.name.toUpperCase();
   document.getElementById('detailStats').innerHTML=`
     <div class="modal-stat"><div class="modal-stat-val">${s.count}</div><div class="modal-stat-lbl">Laps</div></div>
     <div class="modal-stat"><div class="modal-stat-val">${fmt(s.best)}</div><div class="modal-stat-lbl">Best Lap</div></div>
@@ -778,79 +1127,63 @@ function showSessionDetail(idx) {
     <div class="modal-stat"><div class="modal-stat-val">${fmt(s.worst)}</div><div class="modal-stat-lbl">Worst Lap</div></div>
     <div class="modal-stat"><div class="modal-stat-val">${fmtTotal(s.total)}</div><div class="modal-stat-lbl">Race Time</div></div>
     <div class="modal-stat"><div class="modal-stat-val">${fmt(s.worst-s.best)}</div><div class="modal-stat-lbl">Consistency</div></div>`;
-  // Lap list
-  const sortedMs = s.laps.map(l=>l.ms).sort((a,b)=>a-b);
-  const bestMs=sortedMs[0], worstMs=sortedMs[sortedMs.length-1];
-  const lapRows = [...s.laps].map((lap,idx2) => {
-    const isBest=lap.ms===bestMs, isWorst=lap.ms===worstMs&&s.laps.length>1;
+  const sortedMs=s.laps.map(l=>l.ms).sort((a,b)=>a-b);
+  const bestMs=sortedMs[0],worstMs=sortedMs[sortedMs.length-1];
+  document.getElementById('detailLaps').innerHTML=[...s.laps].map((lap,i2)=>{
+    const isBest=lap.ms===bestMs,isWorst=lap.ms===worstMs&&s.laps.length>1;
     const d=fmtDelta(isBest?0:lap.ms-bestMs);
     return `<div style="display:grid;grid-template-columns:28px 1fr 1fr;gap:4px;padding:5px 0;border-bottom:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:12px;${isBest?'color:var(--accent3)':isWorst?'color:var(--accent2)':''}">
-      <span style="font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--muted);">${s.laps.length-idx2}</span>
+      <span style="font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--muted);">${s.laps.length-i2}</span>
       <span style="text-align:right">${fmt(lap.ms)}</span>
       <span style="text-align:right;font-size:11px;">${isBest?'BEST':d.text}</span>
     </div>`;
   }).join('');
-  document.getElementById('detailLaps').innerHTML=lapRows;
   closeModal('historyModal');
   openModal('detailModal');
 }
 
 function deleteSession(idx) {
-  if (idx < 0) return;
-  const btn = document.querySelector('#detailModal .modal-btn-danger');
-  if (btn.dataset.confirm !== 'true') {
-    btn.textContent = 'TAP AGAIN TO DELETE';
-    btn.dataset.confirm = 'true';
-    setTimeout(() => { btn.textContent = 'DELETE'; btn.dataset.confirm = ''; }, 3000);
+  if(idx<0)return;
+  const btn=document.querySelector('#detailModal .modal-btn-danger');
+  if(btn.dataset.confirm!=='true'){
+    btn.textContent='TAP AGAIN TO CONFIRM';btn.dataset.confirm='true';
+    setTimeout(()=>{btn.textContent='DELETE SESSION';btn.dataset.confirm='';},3000);
     return;
   }
-  const sessions = loadHistory();
-  sessions.splice(idx, 1);
-  saveHistory(sessions);
-  closeModal('detailModal');
-  showHistoryModal();
+  const sessions=loadHistory();sessions.splice(idx,1);saveHistory(sessions);
+  closeModal('detailModal');showHistoryModal();
 }
 
 function clearHistory() {
-  const btn = document.getElementById('btnClearHistory');
-  if (btn.dataset.confirm !== 'true') {
-    btn.textContent = 'TAP AGAIN TO CONFIRM';
-    btn.dataset.confirm = 'true';
-    setTimeout(() => { btn.textContent = 'CLEAR ALL'; btn.dataset.confirm = ''; }, 3000);
+  const btn=document.getElementById('btnClearHistory');
+  if(btn.dataset.confirm!=='true'){
+    btn.textContent='TAP AGAIN TO CONFIRM';btn.dataset.confirm='true';
+    setTimeout(()=>{btn.textContent='CLEAR ALL';btn.dataset.confirm='';},3000);
     return;
   }
-  saveHistory([]);
-  btn.dataset.confirm = '';
-  showHistoryModal();
+  saveHistory([]);btn.dataset.confirm='';showHistoryModal();
 }
 
-// ══════════════════════════════════════════
+// ════════════════════════════════════════
 // WAKE LOCK
-// ══════════════════════════════════════════
-async function requestWakeLock() {
-  try { if('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch(e){}
-}
+// ════════════════════════════════════════
+async function requestWakeLock(){try{if('wakeLock' in navigator)await navigator.wakeLock.request('screen');}catch(e){}}
 requestWakeLock();
-document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') requestWakeLock(); });
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')requestWakeLock();});
 
-// ══════════════════════════════════════════
+// ════════════════════════════════════════
 // BOOT
-// ══════════════════════════════════════════
-window.addEventListener('load', () => {
+// ════════════════════════════════════════
+window.addEventListener('load',()=>{
   initMap();
-  // Start GPS watch immediately — powers both the setup blue dot and the geofence
-  if (navigator.geolocation) {
-    // Quick first fix for map centering
-    navigator.geolocation.getCurrentPosition(pos => {
-      userPos = pos;
-      setupMap.setView([pos.coords.latitude, pos.coords.longitude], 18);
-    }, ()=>{}, { enableHighAccuracy:true, timeout:15000 });
-    // Full watch — creates blue dot and keeps it updated
-    watchId = navigator.geolocation.watchPosition(onPosition, onGpsError,
-      { enableHighAccuracy:true, maximumAge:0, timeout:10000 });
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(pos=>{
+      userPos=pos;
+      if(setupMap)setupMap.setView([pos.coords.latitude,pos.coords.longitude],18);
+    },()=>{},{enableHighAccuracy:true,timeout:15000});
+    navigator.geolocation.watchPosition(onPosition,onGpsError,{enableHighAccuracy:true,maximumAge:0,timeout:10000});
   }
-  // Unlock audio on first touch
-  document.addEventListener('touchstart', () => { try { getAudio(); } catch(e){} }, { once:true });
+  document.addEventListener('touchstart',()=>{try{getAudio();}catch(e){}},{once:true});
 });
 </script>
 </body>
