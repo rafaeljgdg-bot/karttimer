@@ -330,6 +330,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
       <button class="landing-btn landing-btn-secondary" onclick="showScreen('screenTracks');renderTracksList()">📍 &nbsp;MANAGE TRACKS</button>
       <button class="landing-btn landing-btn-secondary" onclick="showScreen('screenTrackBests');renderTrackBests()">🏆 &nbsp;TRACK BESTS</button>
       <button class="landing-btn landing-btn-secondary" onclick="showHistoryFromLanding()">📋 &nbsp;SESSION HISTORY</button>
+      <button class="landing-btn landing-btn-secondary" onclick="startDemo()" style="border-color:rgba(232,255,0,0.3);color:var(--accent);letter-spacing:2px;font-size:12px;">▶ &nbsp;DEMO — Évora (2 laps)</button>
     </div>
   </div>
 </div>
@@ -1273,6 +1274,90 @@ function clearHistory(){
 // ══════════════════════════════════════════
 // WAKE LOCK & BOOT
 // ══════════════════════════════════════════
+// ══════════════════════════════════════════
+// DEMO MODE — simulates 2 laps at Évora
+// ══════════════════════════════════════════
+function startDemo() {
+  // Reset any existing session
+  hardReset();
+
+  // Set up Évora with realistic finish line + 2 sector pins
+  // Kartódromo de Évora: main straight finish line
+  finishLine = { lat: 38.5664, lng: -7.9060 };
+
+  // Sector pins placed at realistic points around the circuit
+  sectorPins = [
+    { lat: 38.5671, lng: -7.9048 }, // S2 — end of back straight
+    { lat: 38.5655, lng: -7.9072 }, // S3 — exit of final chicane
+  ];
+
+  // Race duration: 5 minutes for demo
+  raceDurationMs = 5 * 60000;
+  durationIdx = 1;
+  document.getElementById('targetDisplay').textContent = '5';
+  document.getElementById('targetUnit').textContent = ' min';
+
+  // Trigger radius
+  lineRadiusM = 5;
+
+  selectedTrackId = 'evora';
+  setupSectorUI();
+  updateLineIndicator();
+  _lastRemaining = -1;
+  updateRaceCountdownBar(0);
+
+  // Show timer screen
+  showScreen('screenTimer');
+
+  // ── Lap 1 timing (ms from demo start) ──
+  // S1 = 28.4s, S2 = 22.1s, S3 = 18.7s → total 69.2s
+  const L1_S1 = 28400, L1_S2 = 22100, L1_S3 = 18700;
+  // ── Lap 2 timing — personal best ──
+  // S1 = 27.8s, S2 = 21.3s, S3 = 18.1s → total 67.2s
+  const L2_S1 = 27800, L2_S2 = 21300, L2_S3 = 18100;
+
+  const t0 = 800; // small delay before "crossing" start line
+
+  // Auto-start when "crossing" start line for first time
+  setTimeout(() => {
+    autoStartTimer();
+  }, t0);
+
+  // LAP 1 sectors
+  const l1Start = t0;
+  setTimeout(() => _demoSector(1), l1Start + L1_S1);
+  setTimeout(() => _demoSector(2), l1Start + L1_S1 + L1_S2);
+
+  // LAP 1 finish
+  const lap1End = l1Start + L1_S1 + L1_S2 + L1_S3;
+  setTimeout(() => {
+    _demoFinishLine();
+  }, lap1End);
+
+  // LAP 2 sectors
+  setTimeout(() => _demoSector(1), lap1End + L2_S1);
+  setTimeout(() => _demoSector(2), lap1End + L2_S1 + L2_S2);
+
+  // LAP 2 finish
+  setTimeout(() => {
+    _demoFinishLine();
+    // Show end summary after a moment
+    setTimeout(() => resetSession(), 3000);
+  }, lap1End + L2_S1 + L2_S2 + L2_S3);
+}
+
+// Internal helpers that bypass GPS and call the real functions directly
+function _demoSector(sectorNum) {
+  if (!timerRunning) return;
+  // Directly call recordSector which handles all the UI updates
+  recordSector(sectorNum);
+}
+
+function _demoFinishLine() {
+  if (!timerRunning) return;
+  recordLap(false); // false = auto (not manual)
+}
+
 async function requestWakeLock(){try{if('wakeLock' in navigator)await navigator.wakeLock.request('screen');}catch(e){}}
 requestWakeLock();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')requestWakeLock();});
