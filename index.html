@@ -346,17 +346,28 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 
 /* LANDSCAPE */
 @media (orientation:landscape) {
-  .clock{font-size:clamp(36px,8vw,60px);}
-  .clock-section{padding:5px 16px 4px;flex-direction:row;justify-content:space-between;align-items:center;gap:16px;}
+  /* Timer screen landscape layout */
+  .clock{font-size:clamp(32px,7vw,56px);}
+  .clock-section{padding:4px 16px;flex-direction:row;justify-content:space-between;align-items:center;gap:12px;}
   .clock-section > .clock-label{display:none;}
-  .delta-row{flex-direction:column;gap:4px;margin-top:0;}
+  .auto-badge{top:4px;right:8px;}
+  .delta-row{flex-direction:column;gap:3px;margin-top:0;}
   .delta{flex-direction:row;gap:6px;align-items:center;}
   .delta-label{font-size:8px;}
-  .delta-val{font-size:13px;}
-  .controls{padding:6px 14px;padding-bottom:max(6px,env(safe-area-inset-bottom));}
-  .btn{padding:10px 8px;}
-  .lap-countdown{padding:3px 14px;}
-  .landing-title{font-size:clamp(52px,14vw,72px);}
+  .delta-val{font-size:12px;}
+  .stats-strip{grid-template-columns:repeat(4,1fr);}
+  .stat{padding:4px 6px;}
+  .stat-val{font-size:11px;}
+  .stat-lbl{font-size:8px;}
+  .laps-header{padding:3px 12px;}
+  .lap-row{padding:4px 12px;}
+  .controls{padding:5px 14px;padding-bottom:max(5px,env(safe-area-inset-bottom));}
+  .btn{padding:9px 8px;font-size:12px;}
+  .lap-countdown{padding:2px 14px;}
+  .header{padding:6px 14px 4px;}
+  .line-indicator{padding:2px 12px;font-size:9px;}
+  /* Landing */
+  .landing-title{font-size:clamp(42px,12vw,64px);}
 }
 
 /* ══════════════════════════════════════
@@ -944,9 +955,11 @@ function selectTrack(id){
 function startSessionWithSelectedTrack(){
   if(!selectedTrackId)return;
   const pin=getPin(selectedTrackId);if(!pin)return;
+  try{getAudio();}catch(e){} // unlock audio on user gesture
   finishLine={lat:pin.lat,lng:pin.lng};
   if(setupMap){placeFinishLine(pin.lat,pin.lng);setupMap.setView([pin.lat,pin.lng],19);}
   updateLineIndicator();
+  _lastRemaining=-1;
   updateRaceCountdownBar(0);
   showScreen('screenTimer');
 }
@@ -1001,6 +1014,7 @@ function updateLineIndicator(){
   document.getElementById('lineIndicator').innerHTML=`📍 <span>${finishLine.lat.toFixed(5)}, ${finishLine.lng.toFixed(5)}</span> · ${lineRadiusM}m`;
 }
 
+let _lastRemaining = -1;
 function updateRaceCountdownBar(elapsedMs){
   const bar=document.getElementById('lapCountdownBar');
   if(raceDurationMs===0){bar.style.display='none';return;}
@@ -1010,6 +1024,11 @@ function updateRaceCountdownBar(elapsedMs){
   const el=document.getElementById('lapCountdownVal');
   el.textContent=remaining===0?'TIME ✓':`${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
   el.className='lap-countdown-val'+(remaining===0?' done':remaining<=10000?' last1':remaining<=60000?' last3':'');
+  // Beep at key moments (only once per threshold crossing)
+  if(_lastRemaining > 0 && remaining === 0) { beep(880,.05,.4);setTimeout(()=>beep(660,.08,.4),80);setTimeout(()=>beep(440,.2,.5),160); }
+  else if(_lastRemaining > 60000 && remaining <= 60000) { beep(660,.08,.3); } // 1 min warning
+  else if(_lastRemaining > 30000 && remaining <= 30000) { beep(770,.08,.3); } // 30s warning
+  _lastRemaining = remaining;
 }
 
 // ════════════════════════════════════════
@@ -1082,6 +1101,7 @@ function tick(){
 }
 function recordLap(manual){
   if(!timerRunning)return;
+  try{getAudio();}catch(e){}
   const now=performance.now(),lapMs=now-lapStartTime;
   if(lapMs<3000)return;
   lapStartTime=now;
@@ -1144,7 +1164,7 @@ function resetSession(){if(laps.length>0){showSummary();return;}hardReset();show
 function hardReset(){
   timerRunning=false;cancelAnimationFrame(animFrame);
   lapStartTime=0;lapElapsed=0;laps=[];bestLapMs=Infinity;
-  hasStarted=false;wasInsideZone=false;lastLapTime=0;
+  hasStarted=false;wasInsideZone=false;lastLapTime=0;_lastRemaining=-1;
   document.getElementById('clock').textContent='00:00.00';
   document.getElementById('clock').className='clock';
   document.getElementById('clockLabel').textContent='WAITING FOR LINE…';
