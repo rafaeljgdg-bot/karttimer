@@ -643,14 +643,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
     </div>
     <div class="new-session-section">
       <div class="new-session-label">Race Duration</div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div class="target-btns">
-          <button class="target-btn" onclick="changeRaceDuration(-1)">−</button>
-          <span class="target-display" id="targetDisplay">OFF</span>
-          <button class="target-btn" onclick="changeRaceDuration(1)">+</button>
+      <div style="display:flex;align-items:center;gap:12px;padding:4px 0;">
+        <button class="target-btn" style="width:44px;height:44px;font-size:22px;" onclick="changeRaceDuration(-1)">−</button>
+        <div style="flex:1;text-align:center;">
+          <span class="target-display" id="targetDisplay" style="font-size:24px;">OFF</span>
+          <span class="radius-val" id="targetUnit" style="font-size:13px;color:var(--muted);margin-left:4px;"></span>
         </div>
-        <span class="radius-val" id="targetUnit" style="min-width:28px;font-size:11px;color:var(--muted);"></span>
+        <button class="target-btn" style="width:44px;height:44px;font-size:22px;" onclick="changeRaceDuration(1)">+</button>
       </div>
+      <div id="durationHint" style="font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-top:4px;text-align:center;">Tap + to set a race duration</div>
     </div>
     <div class="new-session-section">
       <div class="new-session-label">Trigger Radius</div>
@@ -999,6 +1000,9 @@ function changeRaceDuration(delta){
   raceDurationMs=mins*60000;
   document.getElementById('targetDisplay').textContent=mins===0?'OFF':mins;
   document.getElementById('targetUnit').textContent=mins===0?'':'min';
+  const hint=document.getElementById('durationHint');
+  if(hint)hint.textContent=mins===0?'Tap + to set a race duration':`${mins} minute countdown during the race`;
+  _lastRemaining=-1;
   updateRaceCountdownBar(0);
 }
 
