@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KartTimer">
+<title>KartTimer GPS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --panel: #111111;
+    --border: #1e1e1e;
+    --accent: #e8ff00;
+    --accent2: #ff3b30;
+    --accent3: #30d158;
+    --text: #f0f0f0;
+    --muted: #555;
+    --mid: #222;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { background: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif; height: 100%; overflow: hidden; touch-action: manipulation; }
+  body { display: flex; flex-direction: column; height: 100dvh; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; flex-direction: column; height: 100%; }
+  .screen.active { display: flex; }
+
+  /* ══════════════════════════════════════
+     SETUP SCREEN
+  ══════════════════════════════════════ */
+  .setup-header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .logo { font-size: 18px; font-weight: 700; letter-spacing: 3px; color: var(--accent); }
+  .logo span { color: var(--text); }
+
+  .setup-instruction {
+    padding: 10px 16px 8px;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    flex-shrink: 0;
+    text-align: center;
+  }
+  .setup-instruction strong { color: var(--accent); display: block; font-size: 14px; margin-bottom: 2px; }
+
+  #setupMap {
+    flex: 1;
+    width: 100%;
+    background: #0d0d0d;
+  }
+
+  .setup-footer {
+    padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    background: var(--panel);
+    display: flex; gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .gps-status {
+    display: flex; align-items: center; gap: 8px;
+    flex: 1;
+    font-size: 11px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase;
+  }
+  .gps-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+  }
+  .gps-dot.searching { background: #ff9500; animation: pulse 1s infinite; }
+  .gps-dot.locked    { background: var(--accent3); }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+  /* ══════════════════════════════════════
+     TIMER SCREEN
+  ══════════════════════════════════════ */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px 8px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .header-left { display: flex; flex-direction: column; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+
+  .gps-badge {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 10px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase;
+    background: var(--mid); border-radius: 6px; padding: 4px 8px;
+  }
+  .gps-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+  .gps-badge .dot.ok { background: var(--accent3); animation: pulse 2s infinite; }
+  .gps-badge .dot.warn { background: #ff9500; animation: pulse 1s infinite; }
+
+  .speed-badge {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px; color: var(--accent);
+    background: var(--mid); border-radius: 6px; padding: 4px 8px;
+  }
+
+  /* clock */
+  .clock-section {
+    flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 10px 16px 8px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #141414 0%, var(--bg) 100%);
+    position: relative;
+  }
+  .clock-label { font-size: 10px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; margin-bottom: 2px; }
+  .clock {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: clamp(50px, 13vw, 78px);
+    color: var(--accent); letter-spacing: 2px; line-height: 1;
+    text-shadow: 0 0 30px rgba(232,255,0,0.2);
+    transition: color 0.15s, text-shadow 0.15s;
+  }
+  .clock.best-pace { color: var(--accent3); text-shadow: 0 0 30px rgba(48,209,88,0.4); }
+
+  .auto-badge {
+    position: absolute; top: 10px; right: 12px;
+    font-size: 9px; letter-spacing: 1.5px; color: #000;
+    background: var(--accent3); border-radius: 4px; padding: 3px 6px; font-weight: 700;
+    text-transform: uppercase;
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .auto-badge.show { opacity: 1; }
+
+  .delta-row {
+    display: flex; gap: 18px; margin-top: 5px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .delta { display: flex; flex-direction: column; align-items: center; }
+  .delta-label { font-family: 'Rajdhani', sans-serif; font-size: 9px; letter-spacing: 2px; color: var(--muted); }
+  .delta-val { font-size: 16px; }
+  .pos { color: var(--accent2); } .neg { color: var(--accent3); } .neu { color: var(--muted); }
+
+  /* stats */
+  .stats-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 1px; background: var(--border);
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .stat { background: var(--panel); padding: 7px 6px; text-align: center; }
+  .stat-val { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: var(--text); }
+  .stat-lbl { font-size: 9px; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; }
+
+  /* laps */
+  .laps-header {
+    display: grid; grid-template-columns: 30px 1fr 1fr 1fr;
+    gap: 4px; padding: 5px 12px;
+    background: var(--panel); border-bottom: 1px solid var(--border);
+    font-size: 9px; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .laps-header span:not(:first-child) { text-align: right; }
+
+  .laps-container { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+  .lap-row {
+    display: grid; grid-template-columns: 30px 1fr 1fr 1fr;
+    gap: 4px; padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Share Tech Mono', monospace; font-size: 13px;
+    animation: slideIn 0.2s ease;
+  }
+  @keyframes slideIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+  .lap-row.best  { background: rgba(48,209,88,0.07); }
+  .lap-row.worst { background: rgba(255,59,48,0.05); }
+
+  .lap-num { font-family:'Rajdhani',sans-serif; font-size:11px; color:var(--muted); font-weight:600; }
+  .lap-time { text-align:right; }
+  .lap-delta { text-align:right; font-size:12px; }
+  .lap-delta.pos { color:var(--accent2); } .lap-delta.neg { color:var(--accent3); } .lap-delta.zero { color:var(--accent3); }
+  .lap-split { text-align:right; font-size:12px; color:var(--muted); }
+
+  /* controls */
+  .controls {
+    display: grid; grid-template-columns: 1fr 2fr 1fr;
+    gap: 10px; padding: 10px 16px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border); background: var(--panel); flex-shrink: 0;
+  }
+  .btn {
+    border: none; border-radius: 10px;
+    font-family: 'Rajdhani', sans-serif; font-weight: 700;
+    font-size: 14px; letter-spacing: 2px; text-transform: uppercase;
+    cursor: pointer; padding: 13px 8px;
+    transition: transform 0.08s, opacity 0.1s;
+    user-select: none; -webkit-touch-callout: none;
+  }
+  .btn:active { transform: scale(0.93); opacity: 0.8; }
+  .btn-secondary { background: var(--mid); color: var(--muted); }
+  .btn-lap { background: var(--accent); color: #000; font-size: 17px; box-shadow: 0 0 20px rgba(232,255,0,0.25); }
+  .btn-lap:disabled { background: var(--mid); color: var(--muted); box-shadow: none; }
+  .btn-setup { background: var(--mid); color: var(--muted); font-size: 12px; }
+
+  /* waiting state */
+  .waiting-overlay {
+    position: absolute; inset: 0;
+    background: rgba(10,10,10,0.92);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 10px; z-index: 10;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .waiting-overlay.show { opacity: 1; pointer-events: all; }
+  .waiting-text { font-size: 13px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; text-align: center; }
+  .waiting-text strong { color: var(--accent); display: block; font-size: 16px; margin-bottom: 4px; }
+
+  /* line indicator */
+  .line-indicator {
+    font-size: 10px; letter-spacing: 1.5px; color: var(--muted);
+    text-transform: uppercase; text-align: center;
+    padding: 4px 12px; flex-shrink: 0;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+  }
+  .line-indicator span { color: var(--accent3); }
+
+  /* flash overlay */
+  .flash-overlay {
+    position: fixed; inset: 0; pointer-events: none; opacity: 0; z-index: 100;
+    border: 3px solid var(--accent3); transition: opacity 0.1s;
+  }
+  .flash-overlay.show { opacity: 1; }
+
+  /* modal */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.88);
+    display: none; align-items: center; justify-content: center;
+    z-index: 200; padding: 20px;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 16px; padding: 22px; width: 100%; max-width: 340px;
+  }
+  .modal h2 { font-size: 19px; font-weight: 700; letter-spacing: 2px; margin-bottom: 14px; color: var(--accent); }
+  .modal-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .modal-stat { background: var(--bg); border-radius: 10px; padding: 10px; }
+  .modal-stat-val { font-family:'Share Tech Mono',monospace; font-size:17px; color:var(--accent); }
+  .modal-stat-lbl { font-size:10px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+  .modal-btn {
+    width:100%; padding:13px; border-radius:10px;
+    font-family:'Rajdhani',sans-serif; font-weight:700; font-size:15px;
+    letter-spacing:2px; text-transform:uppercase; border:none; cursor:pointer; margin-top:8px;
+  }
+  .modal-btn-primary { background:var(--accent); color:#000; }
+  .modal-btn-secondary { background:var(--mid); color:var(--text); }
+
+  /* Leaflet dark overrides */
+  .leaflet-container { background: #0d0d0d !important; }
+  .leaflet-tile { filter: invert(1) hue-rotate(180deg) brightness(0.85) saturate(0.7); }
+  .leaflet-control-zoom a { background: var(--panel) !important; color: var(--text) !important; border-color: var(--border) !important; }
+
+  .empty {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    flex:1; gap:8px; color:var(--muted); font-size:11px; letter-spacing:2px;
+    text-transform:uppercase; padding:20px; text-align:center;
+  }
+  .empty-icon { font-size:32px; opacity:0.25; }
+
+  /* setup confirm btn */
+  .btn-confirm {
+    background: var(--accent); color: #000; font-size: 15px;
+    padding: 14px; border-radius: 10px; letter-spacing: 2px;
+    flex: 2;
+  }
+  .btn-confirm:disabled { background: var(--mid); color: var(--muted); box-shadow: none; }
+  .btn-locate {
+    background: var(--mid); color: var(--text); font-size: 12px;
+    padding: 14px; border-radius: 10px; letter-spacing: 1px; flex: 1;
+  }
+</style>
+</head>
+<body>
+
+<div class="flash-overlay" id="flashOverlay"></div>
+
+<!-- ══════════════════════════════════════
+     SETUP SCREEN
+══════════════════════════════════════ -->
+<div class="screen active" id="screenSetup">
+  <div class="setup-header">
+    <div class="logo">KART<span>TIMER</span></div>
+    <div style="font-size:11px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;">GPS SETUP</div>
+  </div>
+
+  <div class="setup-instruction">
+    <strong>Mark the Start / Finish Line</strong>
+    Tap the map exactly where you'll cross the line
+  </div>
+
+  <div id="setupMap"></div>
+
+  <div class="setup-footer">
+    <div class="gps-status">
+      <div class="gps-dot searching" id="setupGpsDot"></div>
+      <span id="setupGpsLabel">Acquiring GPS…</span>
+    </div>
+    <button class="btn btn-locate" onclick="centerOnMe()">📍 Me</button>
+    <button class="btn btn-confirm" id="btnConfirm" disabled onclick="confirmSetup()">START SESSION ›</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TIMER SCREEN
+══════════════════════════════════════ -->
+<div class="screen" id="screenTimer">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="logo" style="font-size:16px;">KART<span>TIMER</span></div>
+      <div style="font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-top:1px;" id="sessionLabel">SESSION 1</div>
+    </div>
+    <div class="header-right">
+      <div class="speed-badge" id="speedBadge">0 km/h</div>
+      <div class="gps-badge">
+        <div class="dot" id="timerGpsDot"></div>
+        <span id="timerGpsLabel">GPS</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="line-indicator" id="lineIndicator">
+    📍 Line: <span>not set</span>
+  </div>
+
+  <div class="clock-section" style="position:relative;">
+    <div class="auto-badge" id="autoBadge">AUTO</div>
+    <div class="clock-label" id="clockLabel">WAITING FOR LINE…</div>
+    <div class="clock" id="clock">00:00.000</div>
+    <div class="delta-row">
+      <div class="delta">
+        <div class="delta-label">vs BEST</div>
+        <div class="delta-val neu" id="deltaBest">---.---</div>
+      </div>
+      <div class="delta">
+        <div class="delta-label">vs PREV</div>
+        <div class="delta-val neu" id="deltaPrev">---.---</div>
+      </div>
+      <div class="delta">
+        <div class="delta-label">vs AVG</div>
+        <div class="delta-val neu" id="deltaAvg">---.---</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-strip">
+    <div class="stat"><div class="stat-val" id="statLaps">0</div><div class="stat-lbl">Laps</div></div>
+    <div class="stat"><div class="stat-val" id="statBest">--:--.---</div><div class="stat-lbl">Best</div></div>
+    <div class="stat"><div class="stat-val" id="statAvg">--:--.---</div><div class="stat-lbl">Avg</div></div>
+    <div class="stat"><div class="stat-val" id="statTotal">00:00</div><div class="stat-lbl">Total</div></div>
+  </div>
+
+  <div class="laps-header">
+    <span>#</span>
+    <span style="text-align:right">LAP TIME</span>
+    <span style="text-align:right">vs BEST</span>
+    <span style="text-align:right">TOTAL</span>
+  </div>
+
+  <div class="laps-container" id="lapsContainer">
+    <div class="empty" id="emptyState">
+      <div class="empty-icon">🏁</div>
+      <div>Drive to the start line —<br>timer begins automatically</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-setup" onclick="goToSetup()">⚙ LINE</button>
+    <button class="btn btn-lap" id="btnLap" onclick="recordLap(true)" disabled>LAP</button>
+    <button class="btn btn-secondary" id="btnReset" onclick="resetSession()">RESET</button>
+  </div>
+</div>
+
+<!-- Summary Modal -->
+<div class="modal-backdrop" id="summaryModal">
+  <div class="modal">
+    <h2>SESSION SUMMARY</h2>
+    <div class="modal-stats" id="summaryStats"></div>
+    <button class="modal-btn modal-btn-secondary" onclick="closeModal()">KEEP SESSION</button>
+    <button class="modal-btn modal-btn-primary" onclick="newSession()" style="margin-top:8px">NEW SESSION</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════
+let finishLine = null;       // {lat, lng}
+let userPos    = null;       // latest GeolocationPosition
+let watchId    = null;
+
+let timerRunning = false;
+let lapStartTime = 0;        // performance.now() anchor
+let lapElapsed   = 0;
+let totalElapsed = 0;
+let animFrame    = null;
+
+let laps        = [];
+let bestLapMs   = Infinity;
+let sessionNum  = 1;
+
+// Geofence config
+const LINE_RADIUS_M   = 5;    // metres — trigger zone radius
+const LAP_COOLDOWN_MS = 5000; // minimum ms between lap triggers
+let lastLapTime       = 0;    // Date.now() of last auto-lap
+let hasStarted        = false; // has the first crossing happened?
+
+// ════════════════════════════════════════
+// MAP SETUP
+// ════════════════════════════════════════
+let setupMap, finishMarker, accuracyCircle, userMarker;
+
+function initMap() {
+  setupMap = L.map('setupMap', { zoomControl: true, attributionControl: false });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(setupMap);
+
+  setupMap.on('click', function(e) {
+    placeFinishLine(e.latlng.lat, e.latlng.lng);
+  });
+}
+
+function placeFinishLine(lat, lng) {
+  finishLine = { lat, lng };
+
+  const icon = L.divIcon({
+    className: '',
+    html: `<div style="width:32px;height:32px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 12px rgba(232,255,0,0.6);">🏁</div>`,
+    iconSize: [32, 32], iconAnchor: [16, 16]
+  });
+
+  if (finishMarker) finishMarker.remove();
+  finishMarker = L.marker([lat, lng], { icon }).addTo(setupMap);
+
+  // Draw line radius
+  if (window._finishCircle) window._finishCircle.remove();
+  window._finishCircle = L.circle([lat, lng], {
+    radius: LINE_RADIUS_M, color: '#e8ff00', fillColor: '#e8ff00',
+    fillOpacity: 0.08, weight: 1.5, dashArray: '4 4'
+  }).addTo(setupMap);
+
+  document.getElementById('btnConfirm').disabled = false;
+}
+
+function centerOnMe() {
+  if (userPos) {
+    setupMap.setView([userPos.coords.latitude, userPos.coords.longitude], 18);
+  }
+}
+
+function confirmSetup() {
+  if (!finishLine) return;
+  updateLineIndicator();
+  showScreen('screenTimer');
+  startGPSWatch();
+}
+
+function goToSetup() {
+  showScreen('screenSetup');
+  if (setupMap) setTimeout(() => setupMap.invalidateSize(), 100);
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function updateLineIndicator() {
+  if (!finishLine) return;
+  const el = document.getElementById('lineIndicator');
+  el.innerHTML = `📍 Line set · <span>${finishLine.lat.toFixed(5)}, ${finishLine.lng.toFixed(5)}</span> · radius ${LINE_RADIUS_M}m`;
+}
+
+// ════════════════════════════════════════
+// GPS WATCH
+// ════════════════════════════════════════
+function startGPSWatch() {
+  if (!navigator.geolocation) {
+    setGpsStatus('unavailable', false);
+    return;
+  }
+
+  setGpsStatus('searching', false);
+
+  watchId = navigator.geolocation.watchPosition(
+    onPosition,
+    onGpsError,
+    { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+  );
+}
+
+function onPosition(pos) {
+  userPos = pos;
+  const acc = pos.coords.accuracy;
+  const spd = pos.coords.speed != null ? pos.coords.speed * 3.6 : 0; // m/s → km/h
+
+  // GPS quality
+  const good = acc < 20;
+  setGpsStatus(good ? 'locked' : 'weak', true);
+  document.getElementById('speedBadge').textContent = `${Math.round(spd)} km/h`;
+
+  // Update setup map user marker
+  if (setupMap) {
+    const latlng = [pos.coords.latitude, pos.coords.longitude];
+    if (!userMarker) {
+      const uIcon = L.divIcon({
+        className: '',
+        html: `<div style="width:14px;height:14px;background:#007aff;border:2px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(0,122,255,0.6);"></div>`,
+        iconSize:[14,14], iconAnchor:[7,7]
+      });
+      userMarker = L.marker(latlng, { icon: uIcon }).addTo(setupMap);
+      if (!finishLine) setupMap.setView(latlng, 18);
+    } else {
+      userMarker.setLatLng(latlng);
+    }
+
+    if (accuracyCircle) accuracyCircle.remove();
+    accuracyCircle = L.circle(latlng, {
+      radius: acc, color:'#007aff', fillColor:'#007aff',
+      fillOpacity: 0.08, weight: 1
+    }).addTo(setupMap);
+
+    // Update setup GPS label
+    document.getElementById('setupGpsDot').className = good ? 'gps-dot locked' : 'gps-dot searching';
+    document.getElementById('setupGpsLabel').textContent = good
+      ? `GPS locked · ±${Math.round(acc)}m`
+      : `Weak signal · ±${Math.round(acc)}m`;
+  }
+
+  // Check geofence
+  if (finishLine && document.getElementById('screenTimer').classList.contains('active')) {
+    checkGeofence(pos);
+  }
+}
+
+function onGpsError(err) {
+  setGpsStatus('error', true);
+}
+
+function setGpsStatus(state, onTimer) {
+  if (onTimer) {
+    const dot   = document.getElementById('timerGpsDot');
+    const label = document.getElementById('timerGpsLabel');
+    if (state === 'locked') { dot.className = 'dot ok'; label.textContent = 'GPS'; }
+    else if (state === 'weak') { dot.className = 'dot warn'; label.textContent = 'WEAK'; }
+    else { dot.className = 'dot'; label.textContent = 'NO GPS'; }
+  }
+}
+
+// ════════════════════════════════════════
+// GEOFENCE
+// ════════════════════════════════════════
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+let wasInsideZone = false;
+
+function checkGeofence(pos) {
+  const dist = haversine(pos.coords.latitude, pos.coords.longitude, finishLine.lat, finishLine.lng);
+  const inside = dist <= LINE_RADIUS_M;
+  const now = Date.now();
+
+  if (inside && !wasInsideZone) {
+    // Entered the zone
+    if (!hasStarted) {
+      // First crossing — start the timer
+      hasStarted = true;
+      autoStartTimer();
+    } else if (timerRunning && (now - lastLapTime) > LAP_COOLDOWN_MS) {
+      // Subsequent crossing — record lap
+      lastLapTime = now;
+      recordLap(false);
+    }
+  }
+
+  wasInsideZone = inside;
+}
+
+// ════════════════════════════════════════
+// TIMER
+// ════════════════════════════════════════
+function autoStartTimer() {
+  timerRunning = true;
+  lapStartTime = performance.now();
+  lastLapTime  = Date.now();
+
+  document.getElementById('clockLabel').textContent = 'CURRENT LAP';
+  document.getElementById('autoBadge').classList.add('show');
+  document.getElementById('btnLap').disabled = false;
+  setTimeout(() => document.getElementById('autoBadge').classList.remove('show'), 2500);
+
+  if (navigator.vibrate) navigator.vibrate([20, 10, 20]);
+  animFrame = requestAnimationFrame(tick);
+}
+
+function tick() {
+  if (!timerRunning) return;
+  lapElapsed = performance.now() - lapStartTime;
+  updateClock(lapElapsed);
+  updateDeltas(lapElapsed);
+  const total = laps.reduce((s,l)=>s+l.ms,0) + lapElapsed;
+  document.getElementById('statTotal').textContent = fmtTotal(total);
+  animFrame = requestAnimationFrame(tick);
+}
+
+function recordLap(manual) {
+  if (!timerRunning) return;
+
+  const now = performance.now();
+  const lapMs = now - lapStartTime;
+  if (lapMs < 3000) return; // safety: ignore if < 3s (glitch)
+  lapStartTime = now;
+
+  const isBest = lapMs < bestLapMs;
+  if (isBest) { bestLapMs = lapMs; flashScreen(); }
+
+  const runningTotal = laps.reduce((s,l)=>s+l.ms,0) + lapMs;
+  laps.unshift({ ms: lapMs, total: runningTotal, num: laps.length + 1, manual });
+
+  const sortedMs = laps.map(l=>l.ms).sort((a,b)=>a-b);
+  updateLapList(sortedMs[0], sortedMs[sortedMs.length-1]);
+  updateStats(sortedMs[0]);
+
+  if (navigator.vibrate) navigator.vibrate(isBest ? [25,15,25] : [40]);
+}
+
+// ════════════════════════════════════════
+// FORMAT
+// ════════════════════════════════════════
+function fmt(ms) {
+  if (ms === null || ms === undefined || ms === Infinity) return '--:--.---';
+  const sign = ms < 0 ? '-' : '';
+  const abs = Math.abs(ms);
+  const m = Math.floor(abs/60000);
+  const s = Math.floor((abs%60000)/1000);
+  const mil = abs%1000;
+  return `${sign}${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(mil).padStart(3,'0')}`;
+}
+function fmtDelta(ms) {
+  if (ms===null||ms===undefined) return {text:'---',cls:'neu'};
+  const sign = ms<0?'−':'+';
+  const abs = Math.abs(ms);
+  const s = Math.floor(abs/1000);
+  const mil = abs%1000;
+  const cls = ms<0?'neg':ms>0?'pos':'zero';
+  return { text:`${sign}${s}.${String(mil).padStart(3,'0')}`, cls };
+}
+function fmtTotal(ms) {
+  const m = Math.floor(ms/60000);
+  const s = Math.floor((ms%60000)/1000);
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function updateClock(ms) {
+  const el = document.getElementById('clock');
+  el.textContent = fmt(ms);
+  el.className = (laps.length>0 && ms<bestLapMs) ? 'clock best-pace' : 'clock';
+}
+
+function updateDeltas(cur) {
+  const db = document.getElementById('deltaBest');
+  if (laps.length>0 && bestLapMs!==Infinity) {
+    const d=fmtDelta(cur-bestLapMs); db.textContent=d.text; db.className='delta-val '+d.cls;
+  } else { db.textContent='---.---'; db.className='delta-val neu'; }
+
+  const dp = document.getElementById('deltaPrev');
+  if (laps.length>0) {
+    const d=fmtDelta(cur-laps[0].ms); dp.textContent=d.text; dp.className='delta-val '+d.cls;
+  } else { dp.textContent='---.---'; dp.className='delta-val neu'; }
+
+  const da = document.getElementById('deltaAvg');
+  if (laps.length>0) {
+    const avg=laps.reduce((s,l)=>s+l.ms,0)/laps.length;
+    const d=fmtDelta(cur-avg); da.textContent=d.text; da.className='delta-val '+d.cls;
+  } else { da.textContent='---.---'; da.className='delta-val neu'; }
+}
+
+function updateLapList(bestMs, worstMs) {
+  document.getElementById('emptyState')?.remove();
+  const container = document.getElementById('lapsContainer');
+  container.innerHTML = '';
+  laps.forEach((lap, idx) => {
+    const isBest  = lap.ms === bestMs;
+    const isWorst = lap.ms === worstMs && laps.length > 1;
+    const row = document.createElement('div');
+    row.className = 'lap-row' + (isBest?' best':isWorst?' worst':'');
+    const delta = isBest ? null : lap.ms - bestMs;
+    const d = fmtDelta(delta);
+    const medal = isBest?'🟢':isWorst?'🔴':'';
+    const manualTag = lap.manual ? '<span style="font-size:9px;color:var(--muted);margin-left:3px;">M</span>' : '';
+    row.innerHTML = `
+      <div class="lap-num">${laps.length-idx}</div>
+      <div class="lap-time">${medal?`${medal} `:''}${fmt(lap.ms)}${manualTag}</div>
+      <div class="lap-delta ${isBest?'zero':d.cls}">${isBest?'BEST':d.text}</div>
+      <div class="lap-split">${fmtTotal(lap.total)}</div>`;
+    container.appendChild(row);
+  });
+}
+
+function updateStats(bestMs) {
+  const n = laps.length;
+  const avg = laps.reduce((s,l)=>s+l.ms,0)/n;
+  document.getElementById('statLaps').textContent = n;
+  document.getElementById('statBest').textContent = fmt(bestMs);
+  document.getElementById('statAvg').textContent  = fmt(avg);
+}
+
+function flashScreen() {
+  const o = document.getElementById('flashOverlay');
+  o.classList.add('show');
+  setTimeout(()=>o.classList.remove('show'), 200);
+}
+
+// ════════════════════════════════════════
+// SESSION MGMT
+// ════════════════════════════════════════
+function resetSession() {
+  if (laps.length > 0) { showSummary(); return; }
+  hardReset();
+}
+
+function hardReset() {
+  timerRunning = false;
+  cancelAnimationFrame(animFrame);
+  lapStartTime = 0; lapElapsed = 0; totalElapsed = 0;
+  laps = []; bestLapMs = Infinity;
+  hasStarted = false; wasInsideZone = false; lastLapTime = 0;
+
+  document.getElementById('clock').textContent = '00:00.000';
+  document.getElementById('clock').className = 'clock';
+  document.getElementById('clockLabel').textContent = 'WAITING FOR LINE…';
+  document.getElementById('btnLap').disabled = true;
+  ['deltaBest','deltaPrev','deltaAvg'].forEach(id => {
+    document.getElementById(id).textContent='---.---';
+    document.getElementById(id).className='delta-val neu';
+  });
+  document.getElementById('statLaps').textContent='0';
+  document.getElementById('statBest').textContent='--:--.---';
+  document.getElementById('statAvg').textContent='--:--.---';
+  document.getElementById('statTotal').textContent='00:00';
+  document.getElementById('lapsContainer').innerHTML=`
+    <div class="empty" id="emptyState">
+      <div class="empty-icon">🏁</div>
+      <div>Drive to the start line —<br>timer begins automatically</div>
+    </div>`;
+}
+
+function showSummary() {
+  const n=laps.length; if(!n) return;
+  const sorted=[...laps].map(l=>l.ms).sort((a,b)=>a-b);
+  const best=sorted[0], worst=sorted[sorted.length-1];
+  const avg=laps.reduce((s,l)=>s+l.ms,0)/n;
+  const total=laps.reduce((s,l)=>s+l.ms,0);
+  document.getElementById('summaryStats').innerHTML=`
+    <div class="modal-stat"><div class="modal-stat-val">${n}</div><div class="modal-stat-lbl">Laps</div></div>
+    <div class="modal-stat"><div class="modal-stat-val">${fmt(best)}</div><div class="modal-stat-lbl">Best Lap</div></div>
+    <div class="modal-stat"><div class="modal-stat-val">${fmt(avg)}</div><div class="modal-stat-lbl">Avg Lap</div></div>
+    <div class="modal-stat"><div class="modal-stat-val">${fmt(worst)}</div><div class="modal-stat-lbl">Worst Lap</div></div>
+    <div class="modal-stat"><div class="modal-stat-val">${fmtTotal(total)}</div><div class="modal-stat-lbl">Race Time</div></div>
+    <div class="modal-stat"><div class="modal-stat-val">${fmt(worst-best)}</div><div class="modal-stat-lbl">Consistency</div></div>`;
+  document.getElementById('summaryModal').classList.add('show');
+}
+function closeModal() { document.getElementById('summaryModal').classList.remove('show'); }
+function newSession() {
+  sessionNum++;
+  document.getElementById('sessionLabel').textContent=`SESSION ${sessionNum}`;
+  closeModal(); hardReset();
+}
+
+// ════════════════════════════════════════
+// WAKE LOCK
+// ════════════════════════════════════════
+async function requestWakeLock() {
+  try { if('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch(e){}
+}
+requestWakeLock();
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') requestWakeLock(); });
+
+// ════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════
+window.addEventListener('load', () => {
+  initMap();
+  // Start GPS immediately on setup screen to warm up
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => {
+      userPos = pos;
+      setupMap.setView([pos.coords.latitude, pos.coords.longitude], 18);
+      document.getElementById('setupGpsDot').className = 'gps-dot locked';
+      document.getElementById('setupGpsLabel').textContent = `GPS ready · ±${Math.round(pos.coords.accuracy)}m`;
+    }, ()=>{}, { enableHighAccuracy: true, timeout: 15000 });
+  }
+});
+</script>
+</body>
+</html>
