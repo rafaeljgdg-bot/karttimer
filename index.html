@@ -931,8 +931,10 @@ function confirmSetup(){updateLineIndicator();showScreen('screenTimer');}
 
 function updateLineIndicator(){
   if(!finishLine)return;
+  const el=document.getElementById('lineIndicator');
+  if(!el)return;
   const sc=sectorPins.length>0?` · ${sectorPins.length+1} sectors`:'';
-  document.getElementById('lineIndicator').innerHTML=`📍 <span>${finishLine.lat.toFixed(5)}, ${finishLine.lng.toFixed(5)}</span>${sc}`;
+  el.innerHTML=`📍 <span>${finishLine.lat.toFixed(5)}, ${finishLine.lng.toFixed(5)}</span>${sc}`;
 }
 
 function updateRaceCountdownBar(elapsedMs){
