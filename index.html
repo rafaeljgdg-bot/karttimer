@@ -308,171 +308,39 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 
 <!-- LANDING -->
 <div class="screen active" id="screenLanding">
-  <button class="theme-toggle" onclick="toggleTheme()"><span id="themeIcon">☀️</span><span id="themeLabel">LIGHT</span></button>
-  <div class="landing-bg"><svg class="kart-svg" viewBox="0 0 520 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <div style="display:flex;flex-direction:column;height:100%;padding:0 24px;padding-top:max(52px,env(safe-area-inset-top,20px));padding-bottom:max(24px,env(safe-area-inset-bottom));">
 
-      <!-- Shadow under kart -->
-      <ellipse cx="260" cy="218" rx="200" ry="10" fill="#e8ff00" opacity="0.06"/>
-
-      <!-- Rear axle bar -->
-      <rect x="340" y="148" width="10" height="44" rx="3" fill="#444"/>
-
-      <!-- REAR WHEEL (large, wide go kart style) -->
-      <ellipse cx="370" cy="185" rx="42" ry="42" fill="#1a1a1a" stroke="#333" stroke-width="3"/>
-      <ellipse cx="370" cy="185" rx="32" ry="32" fill="#222"/>
-      <ellipse cx="370" cy="185" rx="18" ry="18" fill="#2a2a2a" stroke="#444" stroke-width="1.5"/>
-      <!-- Tyre grooves rear -->
-      <path d="M330 172 Q332 168 336 165" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M328 185 Q328 180 330 176" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M332 198 Q329 193 330 188" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M342 208 Q338 204 336 199" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M410 172 Q408 168 404 165" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M412 185 Q412 180 410 176" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M408 198 Q411 193 410 188" stroke="#111" stroke-width="2.5" stroke-linecap="round"/>
-      <!-- Rear rim spokes -->
-      <line x1="370" y1="167" x2="370" y2="203" stroke="#555" stroke-width="2"/>
-      <line x1="352" y1="175" x2="388" y2="195" stroke="#555" stroke-width="2"/>
-      <line x1="352" y1="195" x2="388" y2="175" stroke="#555" stroke-width="2"/>
-      <ellipse cx="370" cy="185" rx="7" ry="7" fill="#e8ff00" opacity="0.7"/>
-
-      <!-- FRONT WHEEL (smaller) -->
-      <ellipse cx="128" cy="185" rx="32" ry="32" fill="#1a1a1a" stroke="#333" stroke-width="3"/>
-      <ellipse cx="128" cy="185" rx="22" ry="22" fill="#222"/>
-      <ellipse cx="128" cy="185" rx="12" ry="12" fill="#2a2a2a" stroke="#444" stroke-width="1.5"/>
-      <!-- Tyre grooves front -->
-      <path d="M97 173 Q99 169 103 167" stroke="#111" stroke-width="2" stroke-linecap="round"/>
-      <path d="M96 185 Q96 180 98 177" stroke="#111" stroke-width="2" stroke-linecap="round"/>
-      <path d="M100 197 Q97 192 98 188" stroke="#111" stroke-width="2" stroke-linecap="round"/>
-      <path d="M159 173 Q157 169 153 167" stroke="#111" stroke-width="2" stroke-linecap="round"/>
-      <path d="M160 185 Q160 180 158 177" stroke="#111" stroke-width="2" stroke-linecap="round"/>
-      <path d="M156 197 Q159 192 158 188" stroke="#111" stroke-width="2" stroke-linecap="round"/>
-      <!-- Front rim spokes -->
-      <line x1="128" y1="173" x2="128" y2="197" stroke="#555" stroke-width="1.5"/>
-      <line x1="116" y1="179" x2="140" y2="191" stroke="#555" stroke-width="1.5"/>
-      <line x1="116" y1="191" x2="140" y2="179" stroke="#555" stroke-width="1.5"/>
-      <ellipse cx="128" cy="185" rx="5" ry="5" fill="#e8ff00" opacity="0.7"/>
-
-      <!-- Front axle -->
-      <rect x="120" y="152" width="8" height="33" rx="2" fill="#444"/>
-
-      <!-- CHASSIS / FRAME - low flat go kart body -->
-      <path d="M108 158 L155 140 L340 140 L390 152 L400 165 L390 172 L100 172 L90 165 Z" fill="#1c1c1c" stroke="#333" stroke-width="1.5"/>
-
-      <!-- SIDEPOD / BODY PANELS -->
-      <!-- Left bodywork -->
-      <path d="M108 158 L155 142 L155 155 L112 168 Z" fill="#252525" stroke="#2e2e2e" stroke-width="1"/>
-      <!-- Right bodywork -->
-      <path d="M340 142 L388 153 L385 165 L338 155 Z" fill="#252525" stroke="#2e2e2e" stroke-width="1"/>
-
-      <!-- Floor / undertray -->
-      <rect x="108" y="168" width="280" height="8" rx="2" fill="#161616" stroke="#2a2a2a" stroke-width="1"/>
-
-      <!-- SEAT (upright, go kart style - on the right of centre) -->
-      <path d="M255 100 L295 100 L300 142 L250 142 Z" fill="#2a2a2a" stroke="#444" stroke-width="1.5"/>
-      <!-- Seat back detail -->
-      <path d="M258 105 L292 105 L296 138 L254 138 Z" fill="#222" stroke="#333" stroke-width="1"/>
-      <!-- Seat headrest bump -->
-      <path d="M263 100 Q275 92 287 100" fill="#333" stroke="#444" stroke-width="1"/>
-
-      <!-- DRIVER HELMET -->
-      <!-- Neck/shoulders -->
-      <path d="M258 108 Q275 104 292 108 L295 118 L258 118 Z" fill="#e8ff00" opacity="0.85"/>
-      <!-- Helmet dome -->
-      <path d="M255 118 Q256 90 295 90 Q314 90 316 108 Q316 118 295 118 Z" fill="#e8ff00"/>
-      <!-- Visor -->
-      <path d="M262 104 Q275 98 308 104 L310 114 Q295 118 265 114 Z" fill="#0a0a0a" opacity="0.9"/>
-      <!-- Visor shine -->
-      <path d="M267 106 Q278 102 298 106 L299 110 Q284 113 268 110 Z" fill="#fff" opacity="0.08"/>
-      <!-- Helmet stripe -->
-      <rect x="255" y="95" width="61" height="5" rx="2" fill="#ff3b30" opacity="0.7"/>
-
-      <!-- STEERING WHEEL -->
-      <circle cx="235" cy="128" r="16" fill="none" stroke="#444" stroke-width="3"/>
-      <circle cx="235" cy="128" r="6" fill="#333" stroke="#555" stroke-width="2"/>
-      <line x1="235" y1="112" x2="235" y2="122" stroke="#444" stroke-width="2.5"/>
-      <line x1="219" y1="128" x2="229" y2="128" stroke="#444" stroke-width="2.5"/>
-      <line x1="241" y1="128" x2="251" y2="128" stroke="#444" stroke-width="2.5"/>
-
-      <!-- STEERING COLUMN -->
-      <line x1="235" y1="134" x2="235" y2="150" stroke="#333" stroke-width="3"/>
-
-      <!-- NOSE / FRONT BUMPER -->
-      <path d="M90 162 L108 158 L112 168 L90 168 Z" fill="#e8ff00" opacity="0.9"/>
-      <path d="M85 160 L92 158 L94 170 L85 170 Z" fill="#cc0000" opacity="0.6"/>
-
-      <!-- REAR BUMPER -->
-      <path d="M388 153 L406 155 L406 165 L390 165 Z" fill="#e8ff00" opacity="0.9"/>
-
-      <!-- FRONT WING / NOSE CONE -->
-      <path d="M68 162 L95 156 L96 170 L68 170 Z" fill="#333" stroke="#444" stroke-width="1"/>
-      <!-- Front wing endplates -->
-      <rect x="66" y="158" width="4" height="14" rx="1" fill="#444"/>
-      <!-- Front wing main plane -->
-      <path d="M62 163 L97 158 L97 164 L62 166 Z" fill="#2a2a2a" stroke="#3a3a3a" stroke-width="1"/>
-      <!-- Front wing flap -->
-      <path d="M64 166 L96 162 L96 167 L64 168 Z" fill="#222" stroke="#333" stroke-width="0.5"/>
-
-      <!-- REAR WING -->
-      <!-- Main plane -->
-      <path d="M395 130 L450 125 L452 133 L395 138 Z" fill="#2a2a2a" stroke="#3a3a3a" stroke-width="1"/>
-      <!-- Flap -->
-      <path d="M396 138 L451 133 L452 140 L396 144 Z" fill="#222" stroke="#333" stroke-width="0.5"/>
-      <!-- Wing endplates -->
-      <rect x="450" y="124" width="4" height="18" rx="1" fill="#444"/>
-      <rect x="393" y="128" width="4" height="18" rx="1" fill="#444"/>
-      <!-- Wing support strut -->
-      <line x1="400" y1="140" x2="400" y2="155" stroke="#444" stroke-width="2"/>
-      <line x1="445" y1="137" x2="445" y2="153" stroke="#444" stroke-width="2"/>
-
-      <!-- ENGINE / REAR section -->
-      <rect x="320" y="143" width="55" height="22" rx="3" fill="#1e1e1e" stroke="#333" stroke-width="1"/>
-      <!-- Engine cooling fins -->
-      <line x1="328" y1="143" x2="328" y2="165" stroke="#2a2a2a" stroke-width="1.5"/>
-      <line x1="335" y1="143" x2="335" y2="165" stroke="#2a2a2a" stroke-width="1.5"/>
-      <line x1="342" y1="143" x2="342" y2="165" stroke="#2a2a2a" stroke-width="1.5"/>
-      <line x1="349" y1="143" x2="349" y2="165" stroke="#2a2a2a" stroke-width="1.5"/>
-      <line x1="356" y1="143" x2="356" y2="165" stroke="#2a2a2a" stroke-width="1.5"/>
-      <line x1="363" y1="143" x2="363" y2="165" stroke="#2a2a2a" stroke-width="1.5"/>
-
-      <!-- EXHAUST pipe -->
-      <path d="M375 148 Q395 142 415 138 Q428 135 425 142 Q418 148 400 152 Q385 155 375 155 Z" fill="#2a2a2a" stroke="#444" stroke-width="1"/>
-      <!-- Exhaust heat shimmer -->
-      <path d="M425 140 Q432 136 438 132" stroke="#e8ff00" stroke-width="1" opacity="0.2" stroke-linecap="round"/>
-      <path d="M427 144 Q435 140 442 137" stroke="#e8ff00" stroke-width="0.8" opacity="0.15" stroke-linecap="round"/>
-
-      <!-- NUMBER PLATE on nose -->
-      <rect x="90" y="159" width="18" height="10" rx="2" fill="#e8ff00" opacity="0.9"/>
-      <text x="99" y="167" font-family="monospace" font-size="6" font-weight="bold" fill="#000" text-anchor="middle">32</text>
-
-      <!-- Speed lines -->
-      <line x1="18" y1="155" x2="72" y2="155" stroke="#e8ff00" stroke-width="1.5" opacity="0.25"/>
-      <line x1="8" y1="163" x2="66" y2="163" stroke="#e8ff00" stroke-width="2" opacity="0.18"/>
-      <line x1="14" y1="171" x2="68" y2="171" stroke="#e8ff00" stroke-width="1" opacity="0.12"/>
-      <line x1="22" y1="178" x2="65" y2="178" stroke="#e8ff00" stroke-width="0.8" opacity="0.08"/>
-
-      <!-- Ground line -->
-      <line x1="60" y1="210" x2="460" y2="210" stroke="#e8ff00" stroke-width="0.5" opacity="0.1"/>
-
-    </svg></div>
-  <div class="landing-noise"></div>
-  <div class="landing-stripe"></div>
-  <div class="landing-content">
-    <div class="landing-top">
-      <div class="landing-eyebrow">GPS Lap Timer</div>
-      <div class="landing-title">KART<span>TIMER</span></div>
-      <div class="landing-sub">Automatic lap detection<br>Real-time delta tracking</div>
-      <div class="landing-credit">by Rafael Guerreiro</div>
+    <!-- Top branding -->
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+      <div style="font-size:10px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">GPS Lap Timer</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(72px,22vw,96px);line-height:0.88;color:var(--accent);letter-spacing:2px;">KART</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(72px,22vw,96px);line-height:0.88;color:var(--text);letter-spacing:2px;">TIMER</div>
+      <div style="margin-top:14px;font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;border-left:2px solid var(--accent);padding-left:10px;line-height:1.6;">
+        Automatic lap detection<br>Real-time delta tracking
+      </div>
+      <div style="margin-top:10px;font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;">by Rafael Guerreiro</div>
     </div>
-    <div class="kart-visual"><div style="display:flex;gap:5px;opacity:0.2;"><div style="width:4px;height:4px;border-radius:50%;background:var(--accent);"></div><div style="width:4px;height:4px;border-radius:50%;background:var(--accent);"></div><div style="width:4px;height:4px;border-radius:50%;background:var(--accent);"></div><div style="width:24px;height:4px;border-radius:2px;background:var(--accent);"></div><div style="width:4px;height:4px;border-radius:50%;background:var(--accent);"></div><div style="width:4px;height:4px;border-radius:50%;background:var(--accent);"></div><div style="width:4px;height:4px;border-radius:50%;background:var(--accent);"></div></div></div>
-    <div class="landing-gps"><div class="landing-gps-dot searching" id="landingGpsDot"></div><span id="landingGpsLabel">Acquiring GPS…</span></div>
-    <div class="landing-actions">
+
+    <!-- GPS status -->
+    <div style="display:flex;align-items:center;gap:6px;justify-content:center;padding:10px 0 4px;font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;">
+      <div class="landing-gps-dot searching" id="landingGpsDot"></div>
+      <span id="landingGpsLabel">Acquiring GPS…</span>
+    </div>
+
+    <!-- Buttons -->
+    <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:8px;">
       <button class="landing-btn landing-btn-primary" onclick="showScreen('screenNewSession');buildTrackPickList()">🏁 &nbsp;NEW SESSION</button>
       <button class="landing-btn landing-btn-secondary" onclick="showScreen('screenTracks');renderTracksList()">📍 &nbsp;MANAGE TRACKS</button>
       <button class="landing-btn landing-btn-secondary" onclick="showScreen('screenTrackBests');renderTrackBests()">🏆 &nbsp;TRACK BESTS</button>
       <button class="landing-btn landing-btn-secondary" onclick="showHistoryFromLanding()">📋 &nbsp;SESSION HISTORY</button>
+      <button class="landing-btn landing-btn-secondary" onclick="toggleTheme()" style="font-size:12px;padding:10px;">
+        <span id="themeIcon">☀️</span> &nbsp;<span id="themeLabel">LIGHT MODE</span>
+      </button>
     </div>
   </div>
 </div>
+
+
 
 <!-- TRACK BESTS -->
 <div class="screen" id="screenTrackBests">
