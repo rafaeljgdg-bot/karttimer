@@ -308,34 +308,28 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 
 <!-- LANDING -->
 <div class="screen active" id="screenLanding">
-  <div style="display:flex;flex-direction:column;height:100%;padding:0 24px;padding-top:max(52px,env(safe-area-inset-top,20px));padding-bottom:max(24px,env(safe-area-inset-bottom));">
+  <!-- Theme toggle top-right -->
+  <button onclick="toggleTheme()" style="position:absolute;top:max(14px,env(safe-area-inset-top,14px));right:16px;z-index:10;background:var(--mid);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:1px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:6px;">
+    <span id="themeIcon">☀️</span><span id="themeLabel">LIGHT</span>
+  </button>
 
-    <!-- Top branding -->
+  <div style="display:flex;flex-direction:column;height:100%;padding:0 24px;padding-top:max(52px,env(safe-area-inset-top,20px));padding-bottom:max(24px,env(safe-area-inset-bottom));">
     <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
       <div style="font-size:10px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">GPS Lap Timer</div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(72px,22vw,96px);line-height:0.88;color:var(--accent);letter-spacing:2px;">KART</div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(72px,22vw,96px);line-height:0.88;color:var(--text);letter-spacing:2px;">TIMER</div>
-      <div style="margin-top:14px;font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;border-left:2px solid var(--accent);padding-left:10px;line-height:1.6;">
-        Automatic lap detection<br>Real-time delta tracking
-      </div>
+      <div style="margin-top:14px;font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;border-left:2px solid var(--accent);padding-left:10px;line-height:1.6;">Automatic lap detection<br>Real-time delta tracking</div>
       <div style="margin-top:10px;font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;">by Rafael Guerreiro</div>
     </div>
-
-    <!-- GPS status -->
     <div style="display:flex;align-items:center;gap:6px;justify-content:center;padding:10px 0 4px;font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;">
       <div class="landing-gps-dot searching" id="landingGpsDot"></div>
       <span id="landingGpsLabel">Acquiring GPS…</span>
     </div>
-
-    <!-- Buttons -->
     <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:8px;">
       <button class="landing-btn landing-btn-primary" onclick="showScreen('screenNewSession');buildTrackPickList()">🏁 &nbsp;NEW SESSION</button>
       <button class="landing-btn landing-btn-secondary" onclick="showScreen('screenTracks');renderTracksList()">📍 &nbsp;MANAGE TRACKS</button>
       <button class="landing-btn landing-btn-secondary" onclick="showScreen('screenTrackBests');renderTrackBests()">🏆 &nbsp;TRACK BESTS</button>
       <button class="landing-btn landing-btn-secondary" onclick="showHistoryFromLanding()">📋 &nbsp;SESSION HISTORY</button>
-      <button class="landing-btn landing-btn-secondary" onclick="toggleTheme()" style="font-size:12px;padding:10px;">
-        <span id="themeIcon">☀️</span> &nbsp;<span id="themeLabel">LIGHT MODE</span>
-      </button>
     </div>
   </div>
 </div>
@@ -540,8 +534,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   </div>
 </div>
 
+
 <script>
-// ══════════════════════════════════════════
 // TRACK DATABASE
 // ══════════════════════════════════════════
 const TRACKS = [
@@ -878,7 +872,6 @@ function setupSectorUI(){
 // ══════════════════════════════════════════
 // SETUP MAP
 // ══════════════════════════════════════════
-let setupMap, finishMarker, accuracyCircle, userMarker;
 function initSetupMap(){
   setupMap=L.map('setupMap',{zoomControl:true,attributionControl:false,maxZoom:20});
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:19}).addTo(setupMap);
