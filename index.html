@@ -437,7 +437,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   </div>
   <div id="trackMap"></div>
   <div class="track-edit-footer">
-    <div class="gps-status"><div class="gps-dot searching" id="trackEditGpsDot"></div><span id="trackEditGpsLabel">Acquiring GPS…</span></div>
+    <div style="display:flex;flex-direction:column;flex:1;gap:4px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;white-space:nowrap;">Radius</span>
+        <input type="range" id="trackRadiusSlider" min="3" max="20" value="5" oninput="updateRadius(this.value)" style="flex:1;">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--accent);min-width:32px;text-align:right;" id="trackRadiusVal">5m</span>
+      </div>
+      <div class="gps-status"><div class="gps-dot searching" id="trackEditGpsDot"></div><span id="trackEditGpsLabel">Acquiring GPS…</span></div>
+    </div>
     <button class="btn-locate" onclick="centerTrackMapOnMe()">📍 Me</button>
     <button class="btn-confirm" id="btnSavePin" disabled onclick="saveTrackPin()">SAVE</button>
   </div>
@@ -463,6 +470,16 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
       <button class="target-btn" style="width:52px;height:52px;font-size:26px;" onclick="changeRaceDuration(1)">+</button>
     </div>
     <div id="durationHint" style="font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-top:6px;text-align:center;">Tap + to set a race duration</div>
+  </div>
+
+  <!-- GPS trigger radius -->
+  <div style="padding:12px 20px 10px;border-bottom:1px solid var(--border);flex-shrink:0;">
+    <div style="font-size:9px;letter-spacing:2.5px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">GPS Trigger Radius <span style="color:var(--muted);font-size:9px;">(how close to the pin before recording)</span></div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <input type="range" id="radiusSlider" min="3" max="20" value="5" oninput="updateRadius(this.value)" style="flex:1;">
+      <span style="font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--accent);min-width:40px;text-align:right;" id="radiusVal">5m</span>
+    </div>
+    <div style="font-size:9px;letter-spacing:1px;color:var(--muted);margin-top:4px;">Tip: use 8–12m outdoors to avoid missed crossings at speed</div>
   </div>
 
   <!-- Track list -->
@@ -968,8 +985,8 @@ function placeFinishLine(lat,lng){
 
 function updateRadius(val){
   lineRadiusM=parseInt(val);
-  ['radiusVal','setupRadiusVal'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=val+'m';});
-  ['radiusSlider','setupRadiusSlider'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=val;});
+  ['radiusVal','setupRadiusVal','trackRadiusVal'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=val+'m';});
+  ['radiusSlider','setupRadiusSlider','trackRadiusSlider'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=val;});
   if(window._finishCircle)window._finishCircle.setRadius(lineRadiusM);
   redrawEditPins();
   LAP_COOLDOWN_MS=Math.max(3000,lineRadiusM*600);
