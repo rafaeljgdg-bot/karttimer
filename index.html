@@ -269,23 +269,40 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 
 /* ── LANDSCAPE ── */
 @media (orientation:landscape) {
-  .clock{font-size:clamp(32px,7vw,52px);}
-  .clock-section{padding:4px 16px;flex-direction:row;justify-content:space-between;align-items:center;gap:12px;}
-  .clock-section > .clock-label{display:none;}
-  .auto-badge{top:4px;right:8px;}
-  .delta-row{flex-direction:column;gap:3px;margin-top:0;}
-  .delta{flex-direction:row;gap:6px;align-items:center;}
-  .delta-label{font-size:8px;} .delta-val{font-size:12px;}
-  .stats-strip{grid-template-columns:repeat(4,1fr);}
-  .stat{padding:3px 6px;} .stat-val{font-size:11px;} .stat-lbl{font-size:8px;}
-  .laps-header,.lap-row{padding:4px 12px;}
-  .controls{padding:5px 14px;padding-bottom:max(5px,env(safe-area-inset-bottom));}
-  .btn{padding:9px 8px;font-size:12px;}
-  .lap-countdown{padding:2px 14px;}
-  .header{padding:5px 14px 3px;}
-  .line-indicator{padding:2px 12px;font-size:9px;}
-  .sector-bar{display:none !important;}
-  .landing-title{font-size:clamp(42px,12vw,64px);}
+  /* ── TIMER SCREEN LANDSCAPE ── */
+  /* Make the whole timer screen a 2-column layout */
+  #screenTimer {
+    display: grid;
+    grid-template-rows: auto auto 1fr auto;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "header  header"
+      "clock   sectors"
+      "clock   laps"
+      "controls controls";
+  }
+  .header          { grid-area: header; }
+  .lap-countdown   { grid-column: 1 / -1; }
+  .clock-section   { grid-area: clock; border-right: 1px solid var(--border); border-bottom: none; padding: 8px 14px; display:flex; flex-direction:column; justify-content:center; align-items:center; }
+  .clock           { font-size: clamp(38px, 9vw, 60px); }
+  .clock-label     { font-size: 9px; margin-bottom: 4px; }
+  .auto-badge      { top: 6px; right: 8px; }
+  .sector-bar      { grid-area: sectors; display: flex !important; flex-direction: column; border-bottom: 1px solid var(--border); border-left: none; }
+  .sector-cell     { flex: 1; display: flex; align-items: center; justify-content: space-between; padding: 4px 12px; border-bottom: 1px solid var(--border); }
+  .sector-cell:last-child { border-bottom: none; }
+  .sector-cell-lbl { font-size: 9px; margin-bottom: 0; margin-right: 8px; }
+  .sector-cell-val { font-size: 13px; }
+  .sector-cell-prev { font-size: 8px; margin-top: 0; margin-left: 8px; }
+  .stats-strip     { display: none; } /* hidden in landscape — info is in the clock section */
+  .laps-header     { grid-area: laps; grid-row: 3; grid-column: 2; padding: 3px 10px; font-size: 8px; }
+  .laps-container  { grid-area: laps; grid-row: 3; grid-column: 2; overflow-y: auto; }
+  .lap-row         { padding: 4px 10px; font-size: 11px; }
+  .controls        { grid-area: controls; padding: 5px 14px; padding-bottom: max(5px, env(safe-area-inset-bottom)); }
+  .btn             { padding: 9px 8px; font-size: 12px; }
+  .header          { padding: 5px 14px 4px; }
+  .lap-countdown   { padding: 2px 14px; font-size: 10px; }
+  /* Landing */
+  .landing-title   { font-size: clamp(42px, 12vw, 64px); }
 }
 </style>
 </head>
@@ -851,17 +868,16 @@ function startSessionWithSelectedTrack(){
   const pin=getPin(selectedTrackId);if(!pin)return;
   try{getAudio()}catch(e){}
   finishLine={lat:pin.lat,lng:pin.lng};
-
-  // Load sector pins
   sectorPins=[];
   if(pin.s1)sectorPins.push({lat:pin.s1.lat,lng:pin.s1.lng});
   if(pin.s2)sectorPins.push({lat:pin.s2.lat,lng:pin.s2.lng});
   setupSectorUI();
-
   if(setupMap){placeFinishLine(pin.lat,pin.lng);setupMap.setView([pin.lat,pin.lng],19);}
   updateLineIndicator();
   _lastRemaining=-1;
   updateRaceCountdownBar(0);
+  // Lock to landscape immediately
+  try{screen.orientation.lock('landscape').catch(()=>{});}catch(e){}
   showScreen('screenTimer');
 }
 
@@ -1058,6 +1074,8 @@ function autoStartTimer(){
   setTimeout(()=>document.getElementById('autoBadge').classList.remove('show'),2500);
   if(navigator.vibrate)navigator.vibrate([20,10,20]);
   beepStart();
+  // Lock to landscape for racing
+  try{screen.orientation.lock('landscape').catch(()=>{});}catch(e){}
   animFrame=requestAnimationFrame(tick);
 }
 
@@ -1192,6 +1210,8 @@ function hardReset(){
   lapStartTime=0;lapElapsed=0;laps=[];bestLapMs=Infinity;
   hasStarted=false;wasInsideZone=false;lastLapTime=0;_lastRemaining=-1;
   wasInsideSector1=false;wasInsideSector2=false;currentSector=0;currentSectorTimes=[];
+  // Unlock orientation — return to portrait on landing
+  try{screen.orientation.unlock();}catch(e){}
   document.getElementById('clock').textContent='00:00.00';
   document.getElementById('clock').className='clock';
   document.getElementById('clockLabel').textContent='WAITING FOR LINE…';
@@ -1317,6 +1337,7 @@ function startDemo() {
   updateLineIndicator();
   _lastRemaining = -1;
   updateRaceCountdownBar(0);
+  try{screen.orientation.lock('landscape').catch(()=>{});}catch(e){}
   showScreen('screenTimer');
 
   // Lap times: S1 / S2 / S3 in ms (4 laps, lap 3 is personal best)
