@@ -373,10 +373,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 
   <div style="display:flex;flex-direction:column;height:100%;padding:0 24px;padding-top:max(52px,env(safe-area-inset-top,20px));padding-bottom:max(24px,env(safe-area-inset-bottom));">
     <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
-      <div style="font-size:10px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">GPS Lap Timer</div>
+      <div style="font-size:10px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">Karting Lap Timer · Portugal</div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(72px,22vw,96px);line-height:0.88;color:var(--accent);letter-spacing:2px;">KART</div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:clamp(72px,22vw,96px);line-height:0.88;color:var(--text);letter-spacing:2px;">TIMER</div>
-      <div style="margin-top:14px;font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;border-left:2px solid var(--accent);padding-left:10px;line-height:1.6;">Automatic lap detection<br>Real-time delta tracking</div>
+      <div style="margin-top:14px;font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;border-left:2px solid var(--accent);padding-left:10px;line-height:1.8;">GPS auto lap detection<br>Sector times · Delta tracking<br>23 Portuguese tracks</div>
       <div style="margin-top:10px;font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;">by Rafael Guerreiro</div>
     </div>
     <div style="display:flex;align-items:center;gap:6px;justify-content:center;padding:10px 0 4px;font-size:10px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;">
@@ -388,7 +388,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
       <button class="landing-btn landing-btn-secondary" onclick="showScreen('screenTracks');renderTracksList()">📍 &nbsp;MANAGE TRACKS</button>
       <button class="landing-btn landing-btn-secondary" onclick="showScreen('screenTrackBests');renderTrackBests()">🏆 &nbsp;TRACK BESTS</button>
       <button class="landing-btn landing-btn-secondary" onclick="showHistoryFromLanding()">📋 &nbsp;SESSION HISTORY</button>
-      <button class="landing-btn landing-btn-secondary" onclick="startDemo()" style="border-color:rgba(232,255,0,0.3);color:var(--accent);letter-spacing:2px;font-size:12px;">▶ &nbsp;DEMO — Évora (2 laps)</button>
+      <button class="landing-btn landing-btn-secondary" onclick="startDemo()" style="border-color:rgba(232,255,0,0.3);color:var(--accent);letter-spacing:2px;font-size:12px;">▶ &nbsp;DEMO — Évora (5 laps)</button>
     </div>
   </div>
 </div>
@@ -609,17 +609,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
     <div id="historyList"></div>
     <button class="modal-btn modal-btn-secondary" onclick="closeModal('historyModal')">CLOSE</button>
     <button class="modal-btn modal-btn-danger" id="btnClearHistory" onclick="clearHistory()" style="display:none;">CLEAR ALL</button>
-  </div>
-</div>
-
-<!-- DETAIL MODAL -->
-<div class="modal-backdrop" id="detailModal">
-  <div class="modal">
-    <h2 id="detailTitle">SESSION DETAIL</h2>
-    <div class="modal-stats" id="detailStats"></div>
-    <div id="detailLaps" style="margin-bottom:8px;"></div>
-    <button class="modal-btn modal-btn-secondary" onclick="closeModal('detailModal');openModal('historyModal');">← BACK</button>
-    <button class="modal-btn modal-btn-danger" onclick="deleteSession(currentDetailIdx)">DELETE SESSION</button>
   </div>
 </div>
 
@@ -1374,29 +1363,76 @@ function saveSession(){
 }
 function showHistoryFromLanding(){showHistoryModal();}
 function showHistoryModal(){
-  const sessions=loadHistory(),list=document.getElementById('historyList');
-  if(!sessions.length){list.innerHTML='<div class="history-empty"><div class="history-empty-icon">📋</div>No sessions saved yet</div>';}
-  else{list.innerHTML=sessions.map((s,i)=>`<div class="history-item" onclick="showSessionDetail(${i})"><div class="history-header"><span class="history-name">${s.name}</span><span class="history-date">${s.date} ${s.time||''}</span></div><div class="history-stats"><div><div class="history-stat-val">${s.count}</div><div class="history-stat-lbl">Laps</div></div><div><div class="history-stat-val">${fmt(s.best)}</div><div class="history-stat-lbl">Best</div></div><div><div class="history-stat-val">${fmt(s.avg)}</div><div class="history-stat-lbl">Avg</div></div></div></div>`).join('');}
+  const sessions=loadHistory();
+  const list=document.getElementById('historyList');
+  if(!sessions.length){
+    list.innerHTML='<div class="history-empty"><div class="history-empty-icon">📋</div>No sessions saved yet</div>';
+  } else {
+    list.innerHTML=sessions.map((s,i)=>{
+      const sm=s.laps.map(l=>l.ms).sort((a,b)=>a-b);
+      const bm=sm[0],wm=sm[sm.length-1];
+      const lapRows=[...s.laps].map((lap,i2)=>{
+        const iB=lap.ms===bm,iW=lap.ms===wm&&s.laps.length>1;
+        const d=fmtDelta(iB?0:lap.ms-bm);
+        const col=iB?'color:var(--accent3)':iW?'color:var(--accent2)':'';
+        const tc=lap.trend==='↑'?'var(--accent3)':lap.trend==='↓'?'var(--accent2)':'var(--muted)';
+        return `<div style="display:grid;grid-template-columns:28px 1fr 1fr 18px;gap:4px;padding:5px 0;border-bottom:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:12px;text-align:center;align-items:center;${col}">
+          <span style="font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--muted);">${s.laps.length-i2}</span>
+          <span>${fmt(lap.ms)}</span>
+          <span style="font-size:11px;">${iB?'BEST':d.text}</span>
+          <span style="color:${tc};">${i2<s.laps.length-1&&lap.trend?lap.trend:''}</span>
+        </div>`;
+      }).join('');
+      return `<div class="history-item" style="cursor:default;">
+        <div class="history-header" style="cursor:pointer;" onclick="toggleHistoryLaps(${i})">
+          <div>
+            <span class="history-name">${s.name}</span>
+            <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-top:2px;">${s.date} ${s.time||''}</div>
+          </div>
+          <span id="historyChevron${i}" style="color:var(--muted);font-size:14px;transition:transform .2s;">▼</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0 4px;">
+          <div style="text-align:center;"><div class="history-stat-val">${s.count}</div><div class="history-stat-lbl">Laps</div></div>
+          <div style="text-align:center;"><div class="history-stat-val" style="color:var(--accent3);">${fmt(s.best)}</div><div class="history-stat-lbl">Best</div></div>
+          <div style="text-align:center;"><div class="history-stat-val">${fmt(s.avg)}</div><div class="history-stat-lbl">Avg</div></div>
+          <div style="text-align:center;"><div class="history-stat-val">${fmt(s.worst-s.best)}</div><div class="history-stat-lbl">Spread</div></div>
+        </div>
+        <div id="historyLaps${i}" style="display:none;margin-top:6px;">
+          <div style="display:grid;grid-template-columns:28px 1fr 1fr 18px;gap:4px;padding:4px 0;font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;text-align:center;">
+            <span>#</span><span>LAP TIME</span><span>vs BEST</span><span>↕</span>
+          </div>
+          ${lapRows}
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button onclick="deleteSessionInline(${i})" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,59,48,.1);color:var(--accent2);border:1px solid rgba(255,59,48,.2);font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;" id="delBtn${i}">DELETE</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
   document.getElementById('btnClearHistory').style.display=sessions.length?'block':'none';
   openModal('historyModal');
 }
-function showSessionDetail(idx){
-  const sessions=loadHistory(),s=sessions[idx];currentDetailIdx=idx;
-  document.getElementById('detailTitle').textContent=s.name.toUpperCase();
-  document.getElementById('detailStats').innerHTML=`<div class="modal-stat"><div class="modal-stat-val">${s.count}</div><div class="modal-stat-lbl">Laps</div></div><div class="modal-stat"><div class="modal-stat-val">${fmt(s.best)}</div><div class="modal-stat-lbl">Best Lap</div></div><div class="modal-stat"><div class="modal-stat-val">${fmt(s.avg)}</div><div class="modal-stat-lbl">Avg Lap</div></div><div class="modal-stat"><div class="modal-stat-val">${fmt(s.worst)}</div><div class="modal-stat-lbl">Worst Lap</div></div><div class="modal-stat"><div class="modal-stat-val">${fmtTotal(s.total)}</div><div class="modal-stat-lbl">Race Time</div></div><div class="modal-stat"><div class="modal-stat-val">${fmt(s.worst-s.best)}</div><div class="modal-stat-lbl">Consistency</div></div>`;
-  const sm=s.laps.map(l=>l.ms).sort((a,b)=>a-b),bm=sm[0],wm=sm[sm.length-1];
-  document.getElementById('detailLaps').innerHTML=[...s.laps].map((lap,i2)=>{
-    const iB=lap.ms===bm,iW=lap.ms===wm&&s.laps.length>1;const d=fmtDelta(iB?0:lap.ms-bm);
-    const tc=lap.trend==='↑'?'var(--accent3)':lap.trend==='↓'?'var(--accent2)':' var(--muted)';
-    return `<div style="display:grid;grid-template-columns:24px 1fr 1fr 20px;gap:4px;padding:5px 0;border-bottom:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:12px;${iB?'color:var(--accent3)':iW?'color:var(--accent2)':''}"><span style="font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--muted);">${s.laps.length-i2}</span><span style="text-align:right">${fmt(lap.ms)}</span><span style="text-align:right;font-size:11px;">${iB?'BEST':d.text}</span><span style="text-align:right;color:${tc};">${i2<s.laps.length-1&&lap.trend?lap.trend:''}</span></div>`;
-  }).join('');
-  closeModal('historyModal');openModal('detailModal');
+
+function toggleHistoryLaps(i){
+  const el=document.getElementById('historyLaps'+i);
+  const ch=document.getElementById('historyChevron'+i);
+  if(!el)return;
+  const open=el.style.display==='none';
+  el.style.display=open?'block':'none';
+  if(ch)ch.style.transform=open?'rotate(180deg)':'';
 }
-function deleteSession(idx){
-  if(idx<0)return;
-  const btn=document.querySelector('#detailModal .modal-btn-danger');
-  if(btn.dataset.confirm!=='true'){btn.textContent='TAP AGAIN TO CONFIRM';btn.dataset.confirm='true';setTimeout(()=>{btn.textContent='DELETE SESSION';btn.dataset.confirm='';},3000);return;}
-  const sessions=loadHistory();sessions.splice(idx,1);saveHistory(sessions);closeModal('detailModal');showHistoryModal();
+
+function deleteSessionInline(idx){
+  const btn=document.getElementById('delBtn'+idx);
+  if(!btn)return;
+  if(btn.dataset.confirm!=='true'){
+    btn.textContent='TAP AGAIN TO DELETE';
+    btn.dataset.confirm='true';
+    setTimeout(()=>{if(btn)btn.textContent='DELETE';btn.dataset.confirm='';},3000);
+    return;
+  }
+  const sessions=loadHistory();sessions.splice(idx,1);saveHistory(sessions);
+  showHistoryModal();
 }
 function clearHistory(){
   const btn=document.getElementById('btnClearHistory');
@@ -1432,12 +1468,13 @@ function startDemo() {
   requestLandscape();
   showScreen('screenTimer');
 
-  // Lap times: S1 / S2 / S3 in ms (4 laps, lap 3 is personal best)
+  // Lap times: S1 / S2 / S3 in ms (5 laps, lap 4 is personal best)
   const laps_def = [
-    [28400, 22100, 18700], // Lap 1 — 69.2s (no comparison, first lap)
-    [28900, 22400, 19200], // Lap 2 — 70.5s (slower, S1↑ S2↑ S3↑ all red)
-    [27600, 21500, 18000], // Lap 3 — 67.1s (personal best, all green)
-    [27900, 21800, 18300], // Lap 4 — 68.0s (mixed: S1 green, S2 green, S3 red vs lap3)
+    [28400, 22100, 18700], // Lap 1 — 69.2s (baseline, no prev comparison)
+    [28900, 22400, 19200], // Lap 2 — 70.5s (slower overall, all red)
+    [27800, 21900, 18500], // Lap 3 — 68.2s (mixed: S1 green, S2 red vs L1, S3 green vs L2)
+    [27600, 21500, 18000], // Lap 4 — 67.1s (personal best, all green)
+    [27700, 21600, 18200], // Lap 5 — 67.5s (close to best, S1/S2/S3 all slightly red vs L4)
   ];
 
   const t0 = 800;
