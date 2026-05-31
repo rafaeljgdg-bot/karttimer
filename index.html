@@ -178,18 +178,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .sector-cell-prev{font-size:9px;color:var(--muted);font-family:'Share Tech Mono',monospace;line-height:1;margin-top:1px;}
 
 /* ── LAP LIST ── */
-.laps-header{display:grid;grid-template-columns:26px 1fr 1fr 20px;gap:4px;padding:5px 12px;background:var(--panel);border-bottom:1px solid var(--border);font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;flex-shrink:0;text-align:center;}
-.laps-header span:first-child{text-align:center;}
+.laps-header{display:grid;grid-template-columns:26px 1fr 1fr 20px;gap:4px;padding:5px 12px;background:var(--panel);border-bottom:1px solid var(--border);font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;flex-shrink:0;text-align:center;align-items:center;}
 .laps-container{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-.lap-row{display:grid;grid-template-columns:26px 1fr 1fr 20px;gap:4px;padding:7px 12px;border-bottom:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:13px;animation:slideIn .2s ease;text-align:center;}
+.lap-row{display:grid;grid-template-columns:26px 1fr 1fr 20px;gap:4px;padding:7px 12px;border-bottom:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:13px;animation:slideIn .2s ease;text-align:center;align-items:center;}
 @keyframes slideIn{from{opacity:0;transform:translateY(-5px);}to{opacity:1;transform:translateY(0);}}
 .lap-row.best{background:rgba(48,209,88,0.07);}
 .lap-row.worst{background:rgba(255,59,48,0.05);}
-.lap-num{font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--muted);font-weight:600;text-align:center;}
-.lap-time{text-align:center;}
-.lap-delta{text-align:center;font-size:12px;}
+.lap-num{font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--muted);font-weight:600;text-align:center;display:flex;align-items:center;justify-content:center;}
+.lap-time{text-align:center;display:flex;align-items:center;justify-content:center;}
+.lap-delta{text-align:center;font-size:12px;display:flex;align-items:center;justify-content:center;}
 .lap-delta.pos{color:var(--accent2);} .lap-delta.neg{color:var(--accent3);} .lap-delta.zero{color:var(--accent3);}
-.lap-trend{text-align:center;font-size:14px;}
+.lap-trend{text-align:center;font-size:14px;display:flex;align-items:center;justify-content:center;}
 
 /* ── STATS STRIP ── */
 .stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border);flex-shrink:0;}
@@ -261,48 +260,51 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .empty-icon{font-size:32px;opacity:.25;}
 
 /* ── LEAFLET ── */
-.leaflet-container{background:#0d0d0d !important;}
-.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.85) saturate(.7);}
+.leaflet-container{background:#1a1a1a !important;}
+/* No tile filter for satellite - we want real colours */
 .leaflet-control-zoom a{background:var(--panel) !important;color:var(--text) !important;border-color:var(--border) !important;}
 .leaflet-pane{z-index:400 !important;}
 .leaflet-top,.leaflet-bottom{z-index:500 !important;}
 
 /* ── LANDSCAPE ── */
 @media (orientation:landscape) {
-  /* ── TIMER SCREEN LANDSCAPE ── */
-  /* Make the whole timer screen a 2-column layout */
-  #screenTimer {
-    display: grid;
-    grid-template-rows: auto auto 1fr auto;
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      "header  header"
-      "clock   sectors"
-      "clock   laps"
-      "controls controls";
-  }
-  .header          { grid-area: header; }
-  .lap-countdown   { grid-column: 1 / -1; }
-  .clock-section   { grid-area: clock; border-right: 1px solid var(--border); border-bottom: none; padding: 8px 14px; display:flex; flex-direction:column; justify-content:center; align-items:center; }
-  .clock           { font-size: clamp(38px, 9vw, 60px); }
-  .clock-label     { font-size: 9px; margin-bottom: 4px; }
-  .auto-badge      { top: 6px; right: 8px; }
-  .sector-bar      { grid-area: sectors; display: flex !important; flex-direction: column; border-bottom: 1px solid var(--border); border-left: none; }
-  .sector-cell     { flex: 1; display: flex; align-items: center; justify-content: space-between; padding: 4px 12px; border-bottom: 1px solid var(--border); }
-  .sector-cell:last-child { border-bottom: none; }
-  .sector-cell-lbl { font-size: 9px; margin-bottom: 0; margin-right: 8px; }
-  .sector-cell-val { font-size: 13px; }
-  .sector-cell-prev { font-size: 8px; margin-top: 0; margin-left: 8px; }
-  .stats-strip     { display: none; } /* hidden in landscape — info is in the clock section */
-  .laps-header     { grid-area: laps; grid-row: 3; grid-column: 2; padding: 3px 10px; font-size: 8px; }
-  .laps-container  { grid-area: laps; grid-row: 3; grid-column: 2; overflow-y: auto; }
-  .lap-row         { padding: 4px 10px; font-size: 11px; }
-  .controls        { grid-area: controls; padding: 5px 14px; padding-bottom: max(5px, env(safe-area-inset-bottom)); }
-  .btn             { padding: 9px 8px; font-size: 12px; }
-  .header          { padding: 5px 14px 4px; }
-  .lap-countdown   { padding: 2px 14px; font-size: 10px; }
+  /* ── TIMER: compact linear layout, everything visible ── */
+  #screenTimer { overflow-y: auto; }
+
+  .header { padding: 4px 14px; }
+  .header .logo { font-size: 13px; }
+  #sessionLabel { display: none; }
+
+  .lap-countdown { padding: 2px 14px; font-size: 10px; }
+  .lap-countdown-val { font-size: 12px; }
+
+  .clock-section { padding: 4px 16px 3px; flex-direction: row; align-items: center; justify-content: center; gap: 20px; }
+  .clock-label { font-size: 8px; letter-spacing: 2px; margin-bottom: 0; white-space: nowrap; }
+  .clock { font-size: clamp(30px, 6vw, 46px); }
+  .auto-badge { top: 4px; right: 8px; font-size: 8px; padding: 2px 4px; }
+
+  /* Sectors: horizontal row, compact */
+  .sector-bar { flex-direction: row !important; display: flex !important; }
+  .sector-cell { padding: 3px 6px; }
+  .sector-cell-lbl { font-size: 7px; }
+  .sector-cell-val { font-size: 12px; }
+  .sector-cell-prev { font-size: 7px; }
+
+  /* Stats: all 4 visible, compact */
+  .stats-strip { grid-template-columns: repeat(4,1fr); }
+  .stat { padding: 3px 4px; }
+  .stat-val { font-size: 11px; }
+  .stat-lbl { font-size: 7px; }
+
+  .laps-header { padding: 3px 10px; font-size: 8px; }
+  .lap-row { padding: 4px 10px; font-size: 11px; }
+  .laps-container { max-height: 25vh; overflow-y: auto; }
+
+  .controls { padding: 4px 14px; padding-bottom: max(4px, env(safe-area-inset-bottom)); }
+  .btn { padding: 8px 6px; font-size: 11px; }
+
   /* Landing */
-  .landing-title   { font-size: clamp(42px, 12vw, 64px); }
+  .landing-title { font-size: clamp(42px, 12vw, 64px); }
 }
 </style>
 </head>
@@ -454,6 +456,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
     </div>
   </div>
 </div>
+
+<!-- ROTATE PROMPT (shown on session start if still portrait) -->
+<div id="rotatePrompt" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+  <div style="font-size:48px;animation:rotateAnim 1.5s ease-in-out infinite;">📱</div>
+  <div style="font-size:14px;letter-spacing:3px;color:var(--accent);font-family:'Rajdhani',sans-serif;font-weight:700;text-transform:uppercase;">Rotate to Landscape</div>
+  <div style="font-size:11px;letter-spacing:1.5px;color:var(--muted);font-family:'Rajdhani',sans-serif;text-transform:uppercase;">For the best experience</div>
+  <button onclick="document.getElementById('rotatePrompt').style.display='none'" style="margin-top:8px;background:var(--mid);border:1px solid var(--border);color:var(--muted);padding:10px 20px;border-radius:8px;font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;">SKIP</button>
+</div>
+<style>
+@keyframes rotateAnim{0%{transform:rotate(0deg);}40%{transform:rotate(90deg);}60%{transform:rotate(90deg);}100%{transform:rotate(0deg);}}
+</style>
 
 <!-- TIMER -->
 <div class="screen" id="screenTimer">
@@ -757,7 +770,7 @@ function openTrackEdit(trackId){
   showScreen('screenTrackEdit');
   if(!trackMap){
     trackMap=L.map('trackMap',{zoomControl:true,attributionControl:false,maxZoom:20});
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:19}).addTo(trackMap);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,maxNativeZoom:19}).addTo(trackMap);
     trackMap.on('click',e=>placeEditPin(e.latlng.lat,e.latlng.lng));
   }
   setTimeout(()=>trackMap.invalidateSize(),100);
@@ -877,7 +890,7 @@ function startSessionWithSelectedTrack(){
   _lastRemaining=-1;
   updateRaceCountdownBar(0);
   // Lock to landscape immediately
-  try{screen.orientation.lock('landscape').catch(()=>{});}catch(e){}
+  requestLandscape();
   showScreen('screenTimer');
 }
 
@@ -899,7 +912,7 @@ function setupSectorUI(){
 // ══════════════════════════════════════════
 function initSetupMap(){
   setupMap=L.map('setupMap',{zoomControl:true,attributionControl:false,maxZoom:20});
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20,maxNativeZoom:19}).addTo(setupMap);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,maxNativeZoom:19}).addTo(setupMap);
   setupMap.on('click',e=>placeFinishLine(e.latlng.lat,e.latlng.lng));
 }
 
@@ -1065,6 +1078,27 @@ function recordSector(sectorNum){
 // ══════════════════════════════════════════
 // TIMER
 // ══════════════════════════════════════════
+function requestLandscape(){
+  // Try API lock first (works when installed as PWA)
+  try{
+    screen.orientation.lock('landscape').catch(()=>showRotatePrompt());
+  } catch(e){ showRotatePrompt(); }
+}
+function showRotatePrompt(){
+  // Only show if currently in portrait
+  if(window.innerWidth < window.innerHeight){
+    const el=document.getElementById('rotatePrompt');
+    if(el) el.style.display='flex';
+    // Auto-dismiss when user rotates
+    const handler=()=>{
+      if(window.innerWidth > window.innerHeight){
+        el.style.display='none';
+        window.removeEventListener('resize',handler);
+      }
+    };
+    window.addEventListener('resize',handler);
+  }
+}
 function autoStartTimer(){
   timerRunning=true;lapStartTime=performance.now();sectorStartTime=lapStartTime;lastLapTime=Date.now();
   document.getElementById('clockLabel').textContent='CURRENT LAP';
@@ -1075,7 +1109,7 @@ function autoStartTimer(){
   if(navigator.vibrate)navigator.vibrate([20,10,20]);
   beepStart();
   // Lock to landscape for racing
-  try{screen.orientation.lock('landscape').catch(()=>{});}catch(e){}
+  requestLandscape();
   animFrame=requestAnimationFrame(tick);
 }
 
@@ -1212,6 +1246,7 @@ function hardReset(){
   wasInsideSector1=false;wasInsideSector2=false;currentSector=0;currentSectorTimes=[];
   // Unlock orientation — return to portrait on landing
   try{screen.orientation.unlock();}catch(e){}
+  const rp=document.getElementById('rotatePrompt');if(rp)rp.style.display='none';
   document.getElementById('clock').textContent='00:00.00';
   document.getElementById('clock').className='clock';
   document.getElementById('clockLabel').textContent='WAITING FOR LINE…';
@@ -1337,7 +1372,7 @@ function startDemo() {
   updateLineIndicator();
   _lastRemaining = -1;
   updateRaceCountdownBar(0);
-  try{screen.orientation.lock('landscape').catch(()=>{});}catch(e){}
+  requestLandscape();
   showScreen('screenTimer');
 
   // Lap times: S1 / S2 / S3 in ms (4 laps, lap 3 is personal best)
