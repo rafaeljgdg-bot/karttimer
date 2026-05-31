@@ -176,7 +176,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .sector-bar{display:flex;gap:1px;background:var(--border);border-bottom:1px solid var(--border);flex-shrink:0;}
 .sector-cell{flex:1;background:var(--panel);padding:7px 8px;text-align:center;}
 .sector-cell-lbl{font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:2px;}
-.sector-cell-val{font-family:'Share Tech Mono',monospace;font-size:18px;color:var(--text);font-weight:700;line-height:1.1;}
+.sector-cell-val{font-family:'Share Tech Mono',monospace;font-size:22px;color:var(--text);line-height:1.1;}
 .sector-cell-val.faster{color:var(--accent3);}
 .sector-cell-val.slower{color:var(--accent2);}
 .sector-cell-val.neutral{color:var(--text);}
@@ -198,7 +198,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 /* ── STATS STRIP ── */
 .stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border);flex-shrink:0;}
 .stat{background:var(--panel);padding:8px 6px;text-align:center;}
-.stat-val{font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--accent);font-weight:700;}
+.stat-val{font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--accent);}
 .stat-lbl{font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-top:2px;}
 
 /* ── CONTROLS ── */
@@ -281,8 +281,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .timer-right{display:flex;flex-direction:column;flex:1;overflow:hidden;}
 
 @media (orientation:landscape) {
-  /* Body becomes side-by-side */
-  #screenTimer { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+  /* Body becomes side-by-side — only when timer screen is active */
+  #screenTimer.active { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
   .timer-header { padding: 4px 14px; }
   .lap-countdown { padding: 2px 14px; flex-shrink: 0; }
   .timer-body { flex-direction: row; flex: 1; overflow: hidden; }
