@@ -267,41 +267,79 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .leaflet-top,.leaflet-bottom{z-index:500 !important;}
 
 /* ── LANDSCAPE ── */
+/* ── TIMER SCREEN LAYOUT ── */
+.timer-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 6px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.timer-body{display:flex;flex-direction:column;flex:1;overflow:hidden;}
+.timer-left{display:flex;flex-direction:column;flex-shrink:0;}
+.timer-right{display:flex;flex-direction:column;flex:1;overflow:hidden;}
+
 @media (orientation:landscape) {
-  /* ── TIMER: compact linear layout, everything visible ── */
-  #screenTimer { overflow-y: auto; }
+  /* Body becomes side-by-side */
+  #screenTimer { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+  .timer-header { padding: 4px 14px; }
+  .lap-countdown { padding: 2px 14px; flex-shrink: 0; }
+  .timer-body { flex-direction: row; flex: 1; overflow: hidden; }
 
-  .header { padding: 4px 14px; }
-  .header .logo { font-size: 13px; }
-  #sessionLabel { display: none; }
+  /* LEFT column — 42% width */
+  .timer-left {
+    width: 42%;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 
-  .lap-countdown { padding: 2px 14px; font-size: 10px; }
-  .lap-countdown-val { font-size: 12px; }
+  /* Clock fills most of left */
+  .clock-section {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 8px 16px;
+    border-bottom: none;
+  }
+  .clock-label { font-size: 9px; margin-bottom: 4px; }
+  .clock       { font-size: clamp(44px, 8vw, 68px); line-height: 1; }
+  .auto-badge  { top: 4px; right: 6px; }
 
-  .clock-section { padding: 4px 16px 3px; flex-direction: row; align-items: center; justify-content: center; gap: 20px; }
-  .clock-label { font-size: 8px; letter-spacing: 2px; margin-bottom: 0; white-space: nowrap; }
-  .clock { font-size: clamp(30px, 6vw, 46px); }
-  .auto-badge { top: 4px; right: 8px; font-size: 8px; padding: 2px 4px; }
+  /* Sectors: horizontal row pinned to bottom of left column */
+  .sector-bar {
+    flex-direction: row !important;
+    display: flex !important;
+    flex-shrink: 0;
+    border-top: 1px solid var(--border);
+    border-bottom: none;
+  }
+  .sector-cell     { padding: 5px 8px; }
+  .sector-cell-lbl { font-size: 8px; }
+  .sector-cell-val { font-size: 15px; }
+  .sector-cell-prev{ font-size: 8px; }
 
-  /* Sectors: horizontal row, compact */
-  .sector-bar { flex-direction: row !important; display: flex !important; }
-  .sector-cell { padding: 3px 6px; }
-  .sector-cell-lbl { font-size: 7px; }
-  .sector-cell-val { font-size: 12px; }
-  .sector-cell-prev { font-size: 7px; }
+  /* Stats below sectors */
+  .stats-strip {
+    grid-template-columns: repeat(4,1fr);
+    flex-shrink: 0;
+    border-top: 1px solid var(--border);
+    border-bottom: none;
+  }
+  .stat     { padding: 5px 4px; }
+  .stat-val { font-size: 13px; }
+  .stat-lbl { font-size: 8px; }
 
-  /* Stats: all 4 visible, compact */
-  .stats-strip { grid-template-columns: repeat(4,1fr); }
-  .stat { padding: 3px 4px; }
-  .stat-val { font-size: 11px; }
-  .stat-lbl { font-size: 7px; }
+  /* RIGHT column — 58% width, full height lap list */
+  .timer-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .laps-header   { padding: 4px 12px; font-size: 8px; flex-shrink: 0; }
+  .laps-container{ flex: 1; overflow-y: auto; max-height: none; }
+  .lap-row       { padding: 6px 12px; font-size: 13px; }
 
-  .laps-header { padding: 3px 10px; font-size: 8px; }
-  .lap-row { padding: 4px 10px; font-size: 11px; }
-  .laps-container { max-height: 25vh; overflow-y: auto; }
-
-  .controls { padding: 4px 14px; padding-bottom: max(4px, env(safe-area-inset-bottom)); }
-  .btn { padding: 8px 6px; font-size: 11px; }
+  /* Controls full width */
+  .controls { padding: 4px 14px; padding-bottom: max(4px, env(safe-area-inset-bottom)); flex-shrink: 0; }
+  .btn      { padding: 8px 8px; font-size: 12px; }
 
   /* Landing */
   .landing-title { font-size: clamp(42px, 12vw, 64px); }
@@ -471,79 +509,85 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 <!-- TIMER -->
 <div class="screen" id="screenTimer">
 
-  <!-- Header: session name + GPS -->
-  <div class="header">
-    <div class="header-left">
+  <!-- Header: session name + GPS (full width) -->
+  <div class="timer-header">
+    <div style="display:flex;flex-direction:column;">
       <div class="logo" style="font-size:15px;">KART<span>TIMER</span></div>
       <div style="font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-top:1px;" id="sessionLabel">SESSION 1</div>
     </div>
-    <div class="header-right">
+    <div style="display:flex;align-items:center;gap:8px;">
       <div class="speed-badge" id="speedBadge">0 km/h</div>
       <div class="gps-badge"><div class="dot" id="timerGpsDot"></div><span id="timerGpsLabel">GPS</span></div>
     </div>
   </div>
 
-  <!-- Time remaining bar (only shown when race duration set) -->
+  <!-- Time remaining (full width) -->
   <div class="lap-countdown" id="lapCountdownBar" style="display:none;">
     <span class="lap-countdown-text">TIME REMAINING</span>
     <span class="lap-countdown-val" id="lapCountdownVal">--:--</span>
   </div>
 
-  <!-- Current lap clock -->
-  <div class="clock-section">
-    <div class="auto-badge" id="autoBadge">AUTO</div>
-    <div class="clock-label" id="clockLabel">WAITING FOR LINE…</div>
-    <div class="clock" id="clock">00:00.00</div>
-  </div>
+  <!-- Main content: left + right panels -->
+  <div class="timer-body">
 
-  <!-- Sector times (shown only when sectors configured) -->
-  <!-- Green = faster than previous lap's same sector, Red = slower -->
-  <div class="sector-bar" id="sectorBar" style="display:none;">
-    <div class="sector-cell">
-      <div class="sector-cell-lbl">S1</div>
-      <div class="sector-cell-val" id="sectorLive1">——</div>
-      <div class="sector-cell-prev" id="sectorPrev1"></div>
-    </div>
-    <div class="sector-cell">
-      <div class="sector-cell-lbl">S2</div>
-      <div class="sector-cell-val" id="sectorLive2">——</div>
-      <div class="sector-cell-prev" id="sectorPrev2"></div>
-    </div>
-    <div class="sector-cell" id="sector3Cell" style="display:none;">
-      <div class="sector-cell-lbl">S3</div>
-      <div class="sector-cell-val" id="sectorLive3">——</div>
-      <div class="sector-cell-prev" id="sectorPrev3"></div>
-    </div>
-  </div>
+    <!-- LEFT: clock, sectors, stats -->
+    <div class="timer-left">
+      <div class="clock-section">
+        <div class="auto-badge" id="autoBadge">AUTO</div>
+        <div class="clock-label" id="clockLabel">WAITING FOR LINE…</div>
+        <div class="clock" id="clock">00:00.00</div>
+      </div>
 
-  <!-- Stats strip: laps / best / avg / total session time -->
-  <div class="stats-strip">
-    <div class="stat"><div class="stat-val" id="statLaps">0</div><div class="stat-lbl">Laps</div></div>
-    <div class="stat"><div class="stat-val" id="statBest">--:--.--</div><div class="stat-lbl">Best</div></div>
-    <div class="stat"><div class="stat-val" id="statAvg">--:--.--</div><div class="stat-lbl">Avg</div></div>
-    <div class="stat"><div class="stat-val" id="statTotal">00:00</div><div class="stat-lbl">Session</div></div>
-  </div>
+      <div class="sector-bar" id="sectorBar" style="display:none;">
+        <div class="sector-cell">
+          <div class="sector-cell-lbl">S1</div>
+          <div class="sector-cell-val" id="sectorLive1">——</div>
+          <div class="sector-cell-prev" id="sectorPrev1"></div>
+        </div>
+        <div class="sector-cell">
+          <div class="sector-cell-lbl">S2</div>
+          <div class="sector-cell-val" id="sectorLive2">——</div>
+          <div class="sector-cell-prev" id="sectorPrev2"></div>
+        </div>
+        <div class="sector-cell" id="sector3Cell" style="display:none;">
+          <div class="sector-cell-lbl">S3</div>
+          <div class="sector-cell-val" id="sectorLive3">——</div>
+          <div class="sector-cell-prev" id="sectorPrev3"></div>
+        </div>
+      </div>
 
-  <!-- Lap list -->
-  <div class="laps-header">
-    <span>#</span>
-    <span style="text-align:right">LAP TIME</span>
-    <span style="text-align:right">vs BEST</span>
-    <span style="text-align:right">↕</span>
-  </div>
-  <div class="laps-container" id="lapsContainer">
-    <div class="empty" id="emptyState">
-      <div class="empty-icon">🏁</div>
-      <div>Drive to the start line —<br>timer begins automatically</div>
+      <div class="stats-strip">
+        <div class="stat"><div class="stat-val" id="statLaps">0</div><div class="stat-lbl">Laps</div></div>
+        <div class="stat"><div class="stat-val" id="statBest">--:--.--</div><div class="stat-lbl">Best</div></div>
+        <div class="stat"><div class="stat-val" id="statAvg">--:--.--</div><div class="stat-lbl">Avg</div></div>
+        <div class="stat"><div class="stat-val" id="statTotal">00:00</div><div class="stat-lbl">Session</div></div>
+      </div>
     </div>
-  </div>
+
+    <!-- RIGHT: lap list -->
+    <div class="timer-right">
+      <div class="laps-header">
+        <span>#</span>
+        <span>LAP TIME</span>
+        <span>vs BEST</span>
+        <span>↕</span>
+      </div>
+      <div class="laps-container" id="lapsContainer">
+        <div class="empty" id="emptyState">
+          <div class="empty-icon">🏁</div>
+          <div>Drive to the start line —<br>timer begins automatically</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end timer-body -->
 
   <!-- Controls -->
-  <div class="controls">
+  <div class="controls" style="grid-template-columns:1fr 1fr;">
     <button class="btn btn-setup" onclick="showScreen('screenSetup');setTimeout(()=>setupMap&&setupMap.invalidateSize(),100)">⚙ LINE</button>
-    <button class="btn btn-lap" id="btnLap" onclick="recordLap(true)" disabled>LAP</button>
     <button class="btn btn-secondary" onclick="resetSession()">END</button>
   </div>
+
 </div>
 
 <!-- SUMMARY MODAL -->
@@ -1103,7 +1147,6 @@ function autoStartTimer(){
   timerRunning=true;lapStartTime=performance.now();sectorStartTime=lapStartTime;lastLapTime=Date.now();
   document.getElementById('clockLabel').textContent='CURRENT LAP';
   document.getElementById('autoBadge').classList.add('show');
-  document.getElementById('btnLap').disabled=false;
   currentSector=0;currentSectorTimes=[];
   setTimeout(()=>document.getElementById('autoBadge').classList.remove('show'),2500);
   if(navigator.vibrate)navigator.vibrate([20,10,20]);
@@ -1164,12 +1207,20 @@ function recordLap(manual){
   if(navigator.vibrate)navigator.vibrate(isBest?[25,15,25]:[40]);
   beepLap(isBest);
 
-  // Keep sector times visible for 4s so driver can read S3, then reset
+  // After 4s: reset live sector times but keep prev labels for entire next lap
   if(sectorPins.length>0){
+    // Immediately write prev sector targets for the next lap (from lap just stored = laps[0])
+    const justFinished=laps[0];
+    for(let i=0;i<sectorPins.length+1;i++){
+      const prevEl=document.getElementById('sectorPrev'+(i+1));
+      if(prevEl&&justFinished.sectors[i]!=null)
+        prevEl.textContent='prev: '+fmtS(justFinished.sectors[i]);
+    }
     setTimeout(()=>{
       for(let i=1;i<=sectorPins.length+1;i++){
-        const e=document.getElementById(`sectorLive${i}`);
+        const e=document.getElementById('sectorLive'+i);
         if(e){e.textContent='——';e.className='sector-cell-val';}
+        // Prev labels intentionally NOT cleared here — stay for entire next lap
       }
     }, 4000);
   }
@@ -1250,7 +1301,6 @@ function hardReset(){
   document.getElementById('clock').textContent='00:00.00';
   document.getElementById('clock').className='clock';
   document.getElementById('clockLabel').textContent='WAITING FOR LINE…';
-  document.getElementById('btnLap').disabled=true;
   document.getElementById('statLaps').textContent='0';document.getElementById('statBest').textContent='--:--.--';document.getElementById('statAvg').textContent='--:--.--';document.getElementById('statTotal').textContent='00:00';
   document.getElementById('lapsContainer').innerHTML='<div class="empty" id="emptyState"><div class="empty-icon">🏁</div><div>Drive to the start line —<br>timer begins automatically</div></div>';
   updateRaceCountdownBar(0);
