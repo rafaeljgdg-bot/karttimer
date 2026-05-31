@@ -180,7 +180,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .sector-cell-val.faster{color:var(--accent3);}
 .sector-cell-val.slower{color:var(--accent2);}
 .sector-cell-val.neutral{color:var(--text);}
-.sector-cell-prev{font-size:9px;color:var(--muted);font-family:'Share Tech Mono',monospace;line-height:1;margin-top:2px;}
+.sector-cell-prev{font-size:11px;color:var(--muted);font-family:'Share Tech Mono',monospace;line-height:1;margin-top:3px;}
 
 /* ── LAP LIST ── */
 .laps-header{display:grid;grid-template-columns:26px 1fr 1fr 20px;gap:4px;padding:5px 12px;background:var(--panel);border-bottom:1px solid var(--border);font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;flex-shrink:0;text-align:center;align-items:center;}
@@ -731,8 +731,13 @@ function beepStart(){beep(440,.07,.25);setTimeout(()=>beep(660,.12,.3),90)}
 // NAVIGATION
 // ══════════════════════════════════════════
 function showScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.screen').forEach(s=>{
+    s.classList.remove('active');
+    s.style.display='none'; // explicit override for any CSS specificity issues
+  });
+  const target=document.getElementById(id);
+  target.classList.add('active');
+  target.style.display=''; // let CSS handle it via .screen.active{display:flex}
   if(id==='screenSetup')setTimeout(()=>setupMap&&setupMap.invalidateSize(),100);
   if(id==='screenTrackEdit')setTimeout(()=>trackMap&&trackMap.invalidateSize(),100);
 }
