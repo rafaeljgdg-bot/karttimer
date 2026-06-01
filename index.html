@@ -440,8 +440,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
     <div style="display:flex;flex-direction:column;flex:1;gap:4px;">
       <div style="display:flex;align-items:center;gap:8px;">
         <span style="font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;white-space:nowrap;">Radius</span>
-        <input type="range" id="trackRadiusSlider" min="3" max="20" value="5" oninput="updateRadius(this.value)" style="flex:1;">
-        <span style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--accent);min-width:32px;text-align:right;" id="trackRadiusVal">5m</span>
+        <input type="range" id="trackRadiusSlider" min="10" max="50" value="25" oninput="updateRadius(this.value)" style="flex:1;">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--accent);min-width:32px;text-align:right;" id="trackRadiusVal">25m</span>
       </div>
       <div class="gps-status"><div class="gps-dot searching" id="trackEditGpsDot"></div><span id="trackEditGpsLabel">Acquiring GPS…</span></div>
     </div>
@@ -474,12 +474,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 
   <!-- GPS trigger radius -->
   <div style="padding:12px 20px 10px;border-bottom:1px solid var(--border);flex-shrink:0;">
-    <div style="font-size:9px;letter-spacing:2.5px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">GPS Trigger Radius <span style="color:var(--muted);font-size:9px;">(how close to the pin before recording)</span></div>
+    <div style="font-size:9px;letter-spacing:2.5px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Detection Radius <span style="color:var(--muted);font-size:9px;">(noise gate — does not affect timing accuracy)</span></div>
     <div style="display:flex;align-items:center;gap:12px;">
-      <input type="range" id="radiusSlider" min="3" max="20" value="5" oninput="updateRadius(this.value)" style="flex:1;">
-      <span style="font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--accent);min-width:40px;text-align:right;" id="radiusVal">5m</span>
+      <input type="range" id="radiusSlider" min="10" max="50" value="25" oninput="updateRadius(this.value)" style="flex:1;">
+      <span style="font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--accent);min-width:40px;text-align:right;" id="radiusVal">25m</span>
     </div>
-    <div style="font-size:9px;letter-spacing:1px;color:var(--muted);margin-top:4px;">Tip: use 8–12m outdoors to avoid missed crossings at speed</div>
+    <div style="font-size:9px;letter-spacing:1px;color:var(--muted);margin-top:4px;">25m recommended at 50 km/h. Larger = more GPS reads near the pin = more accurate interpolation. Timing reference is always the exact pin coordinate, not the zone edge.</div>
   </div>
 
   <!-- Track list -->
@@ -504,8 +504,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   <div class="setup-footer">
     <div class="radius-row">
       <span class="radius-label">Trigger radius</span>
-      <input type="range" id="setupRadiusSlider" min="3" max="20" value="5" oninput="updateRadius(this.value)">
-      <span class="radius-val" id="setupRadiusVal">5m</span>
+      <input type="range" id="setupRadiusSlider" min="10" max="50" value="25" oninput="updateRadius(this.value)">
+      <span class="radius-val" id="setupRadiusVal">25m</span>
     </div>
     <div class="setup-row">
       <div class="gps-status"><div class="gps-dot searching" id="setupGpsDot"></div><span id="setupGpsLabel">GPS…</span></div>
@@ -662,12 +662,12 @@ const TRACKS = [
 // ══════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════
-let finishLine=null, userPos=null, lineRadiusM=5, raceDurationMs=0;
+let finishLine=null, userPos=null, lineRadiusM=25, raceDurationMs=0;
 const DURATION_OPTIONS=[0,5,8,10,12,15,20,25,30];
 let durationIdx=0, selectedTrackId=null;
 let timerRunning=false, lapStartTime=0, lapElapsed=0, animFrame=null;
 let laps=[], bestLapMs=Infinity, sessionNum=1;
-let LAP_COOLDOWN_MS=5000, lastLapTime=0, hasStarted=false, wasInsideZone=false;
+let LAP_COOLDOWN_MS=15000, lastLapTime=0, hasStarted=false, wasInsideZone=false;
 let currentDetailIdx=-1, _lastRemaining=-1;
 let setupMap, finishMarker, accuracyCircle, userMarker;
 let trackMap, trackMarker, trackAccCircle, trackUserMarker, editingTrackId=null;
@@ -1061,76 +1061,249 @@ function onGpsError(){}
 // ══════════════════════════════════════════
 function haversine(a,b,c,d){const R=6371000,dL=(c-a)*Math.PI/180,dO=(d-b)*Math.PI/180,x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dO/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x))}
 
+// ── Line crossing detection ──
+//
+// The radius is a NOISE GATE only — it prevents false triggers from GPS noise
+// far away from the pin. It does NOT affect timing accuracy.
+//
+// Timing works by watching the distance-to-pin trend across ALL snapshots
+// within the detection window:
+//
+//   APPROACHING (dist decreasing) → buffer these
+//   RECEDING    (dist increasing) → pin was between last approaching + this one
+//
+// The crossing time is interpolated between those two snapshots.
+// The actual crossing point (dist=0) is used, not the zone boundary.
+//
+// Why you still need a radius:
+//   1. GPS noise (~5m) causes random dist fluctuations far from the pin → false triggers
+//   2. Sector ordering — know which pin you're near
+//   3. Cooldown window — know when you've passed and left the area
+//
+// Radius sizing: must be > 1 GPS step (14m at 50 km/h) to guarantee
+// at least one snapshot on each side of the pin. 25m is safe for 50 km/h.
+
+let prevGPS = null;
+
+// Per-pin approach buffers: collect consecutive snapshots while distance is decreasing
+// Reset when: distance starts increasing (= crossed pin), or left zone
+let mainApproach    = null; // last snapshot where we were still approaching main pin
+let sector1Approach = null;
+let sector2Approach = null;
+
+// Track whether we're inside each zone
+let inMainZone=false, inS1Zone=false, inS2Zone=false;
+
+function tryDetectCrossing(lastApproach, curDist, curPerfTime, cooldownOk) {
+  // Called when dist just increased — means we passed the pin between lastApproach and now
+  // Returns crossing time if valid, null otherwise
+  if (!lastApproach) return null;
+  if (!cooldownOk) return null;
+
+  const totalDist = lastApproach.dist + curDist; // dist before + dist after
+  if (totalDist <= 0) return curPerfTime;
+  const fraction = lastApproach.dist / totalDist;
+  const dt = curPerfTime - lastApproach.perfTime;
+  return lastApproach.perfTime + fraction * dt;
+}
+
 function checkGeofence(pos){
-  const lat=pos.coords.latitude,lng=pos.coords.longitude,now=Date.now();
+  const lat=pos.coords.latitude, lng=pos.coords.longitude, now=Date.now();
+  const perfNow=performance.now();
   const distMain=haversine(lat,lng,finishLine.lat,finishLine.lng);
   const insideMain=distMain<=lineRadiusM;
 
-  // Sector 1 (S2 pin)
+  // ── MAIN S/F line ──
+  if(insideMain){
+    inMainZone=true;
+    if(mainApproach!==null && distMain > mainApproach.dist){
+      // Distance increased — we just passed the pin
+      const cooldownOk = !timerRunning || (now-lastLapTime)>LAP_COOLDOWN_MS;
+      const ct = tryDetectCrossing(mainApproach, distMain, perfNow, cooldownOk);
+      if(ct!==null){
+        mainApproach=null;
+        if(!hasStarted){
+          hasStarted=true;
+          autoStartTimerAt(ct);
+        } else if(timerRunning){
+          lastLapTime=now;
+          recordLapAt(ct, false);
+        }
+      }
+    } else {
+      // Still approaching (or first snapshot in zone) — update approach reference
+      mainApproach={dist:distMain, perfTime:perfNow};
+    }
+  } else {
+    if(inMainZone){
+      // Just left the zone without detecting a crossing
+      // This means we either: slowed down and turned back, or GPS missed the pin flip
+      // Fallback: if we had an approach snapshot and cooldown ok, trigger on zone exit
+      const cooldownOk = !timerRunning || (now-lastLapTime)>LAP_COOLDOWN_MS;
+      if(mainApproach!==null && cooldownOk){
+        // Use the closest approach point as the timing reference (best we can do)
+        if(!hasStarted){
+          hasStarted=true;
+          autoStartTimerAt(mainApproach.perfTime);
+        } else if(timerRunning){
+          lastLapTime=now;
+          recordLapAt(mainApproach.perfTime, false);
+        }
+      }
+      mainApproach=null;
+    }
+    inMainZone=false;
+  }
+  wasInsideZone=insideMain;
+
+  // ── Sector 1 (S2 pin) ──
   if(sectorPins.length>0){
     const distS1=haversine(lat,lng,sectorPins[0].lat,sectorPins[0].lng);
     const insideS1=distS1<=lineRadiusM;
-    if(insideS1&&!wasInsideSector1&&timerRunning&&currentSector===0){
-      wasInsideSector1=true;
-      recordSector(1);
+    if(insideS1&&timerRunning&&currentSector===0){
+      inS1Zone=true;
+      if(sector1Approach!==null && distS1 > sector1Approach.dist){
+        const ct=tryDetectCrossing(sector1Approach, distS1, perfNow, true);
+        if(ct!==null){ sector1Approach=null; wasInsideSector1=true; recordSectorAt(1,ct); }
+      } else {
+        sector1Approach={dist:distS1, perfTime:perfNow};
+      }
+    } else if(!insideS1){
+      // Left S1 zone — fallback trigger if needed
+      if(inS1Zone && sector1Approach!==null && timerRunning && currentSector===0){
+        wasInsideSector1=true;
+        recordSectorAt(1, sector1Approach.perfTime);
+      }
+      sector1Approach=null; inS1Zone=false; wasInsideSector1=false;
     }
-    if(!insideS1)wasInsideSector1=false;
   }
 
-  // Sector 2 (S3 pin)
+  // ── Sector 2 (S3 pin) ──
   if(sectorPins.length>1){
     const distS2=haversine(lat,lng,sectorPins[1].lat,sectorPins[1].lng);
     const insideS2=distS2<=lineRadiusM;
-    if(insideS2&&!wasInsideSector2&&timerRunning&&currentSector===1){
-      wasInsideSector2=true;
-      recordSector(2);
+    if(insideS2&&timerRunning&&currentSector===1){
+      inS2Zone=true;
+      if(sector2Approach!==null && distS2 > sector2Approach.dist){
+        const ct=tryDetectCrossing(sector2Approach, distS2, perfNow, true);
+        if(ct!==null){ sector2Approach=null; wasInsideSector2=true; recordSectorAt(2,ct); }
+      } else {
+        sector2Approach={dist:distS2, perfTime:perfNow};
+      }
+    } else if(!insideS2){
+      if(inS2Zone && sector2Approach!==null && timerRunning && currentSector===1){
+        wasInsideSector2=true;
+        recordSectorAt(2, sector2Approach.perfTime);
+      }
+      sector2Approach=null; inS2Zone=false; wasInsideSector2=false;
     }
-    if(!insideS2)wasInsideSector2=false;
   }
 
-  // Main S/F line
-  if(insideMain&&!wasInsideZone){
-    if(!hasStarted){hasStarted=true;autoStartTimer();}
-    else if(timerRunning&&(now-lastLapTime)>LAP_COOLDOWN_MS){lastLapTime=now;recordLap(false);}
-  }
-  wasInsideZone=insideMain;
+  prevGPS={lat,lng,perfTime:perfNow};
 }
 
-// ══════════════════════════════════════════
-// SECTOR RECORDING
-// S1 = lap start → S2 pin
-// S2 = S2 pin → S3 pin
-// S3 = S3 pin → finish line
-// Compare vs same sector on the PREVIOUS lap (not all-time best)
-// ══════════════════════════════════════════
-function recordSector(sectorNum){
-  // sectorNum 1 = just crossed S2 pin (completing S1)
-  // sectorNum 2 = just crossed S3 pin (completing S2)
+
+function autoStartTimerAt(atTime){
+  // atTime = performance.now() value representing the true crossing moment
+  timerRunning=true;
+  lapStartTime=atTime;        // lap started at the midpoint crossing
+  sectorStartTime=atTime;
+  lastLapTime=Date.now();
+  document.getElementById('clockLabel').textContent='CURRENT LAP';
+  document.getElementById('autoBadge').classList.add('show');
+  setTimeout(()=>document.getElementById('autoBadge').classList.remove('show'),2500);
+  if(navigator.vibrate)navigator.vibrate([20,10,20]);
+  beepStart();
+  requestLandscape();
+  animFrame=requestAnimationFrame(tick);
+}
+
+function autoStartTimer(){
+  autoStartTimerAt(performance.now());
+}
+
+function recordLapAt(atTime, manual){
   if(!timerRunning)return;
-  const now=performance.now();
-  const sectorMs=now-sectorStartTime;  // time since last sector/lap start
-  currentSectorTimes[sectorNum-1]=sectorMs; // store S1 at [0], S2 at [1]
-  sectorStartTime=now;
+  try{getAudio()}catch(e){}
+  const lapMs=atTime-lapStartTime;
+  if(lapMs<3000)return;
+
+  // Final sector at the same midpoint time
+  if(sectorPins.length>0){
+    const displayIdx=sectorPins.length+1;
+    const storeIdx=sectorPins.length;
+    const finalSectorMs=atTime-sectorStartTime;
+    currentSectorTimes[storeIdx]=finalSectorMs;
+    const prevLap=laps[0];
+    const prevMs=prevLap&&prevLap.sectors?prevLap.sectors[storeIdx]:null;
+    const isFaster=prevMs!=null&&finalSectorMs<prevMs;
+    const isSlower=prevMs!=null&&finalSectorMs>prevMs;
+    const liveEl=document.getElementById('sectorLive'+displayIdx);
+    if(liveEl){liveEl.textContent=fmtS(finalSectorMs);liveEl.className='sector-cell-val '+(isFaster?'faster':isSlower?'slower':'neutral');}
+    const prevEl=document.getElementById('sectorPrev'+displayIdx);
+    if(prevEl)prevEl.textContent=prevMs!=null?'prev: '+fmtS(prevMs):'';
+  }
+
+  lapStartTime=atTime; sectorStartTime=atTime; currentSector=0;
+  const isBest=lapMs<bestLapMs;
+  if(isBest){bestLapMs=lapMs;showBestLapFlash(lapMs);}
+  else{flashScreen();}
+
+  const rt=laps.reduce((s,l)=>s+l.ms,0)+lapMs;
+  const trend=laps.length>0?(lapMs<laps[0].ms?'↑':lapMs>laps[0].ms?'↓':'→'):'';
+  laps.unshift({ms:lapMs,total:rt,num:laps.length+1,manual,trend,sectors:[...currentSectorTimes]});
+  currentSectorTimes=[];
+
+  const sm=laps.map(l=>l.ms).sort((a,b)=>a-b);
+  updateLapList(sm[0],sm[sm.length-1]);
+  updateStats(sm[0]);
+
+  if(navigator.vibrate)navigator.vibrate(isBest?[25,15,25]:[40]);
+  beepLap(isBest);
+
+  // Write prev sector targets for next lap
+  const justFinished=laps[0];
+  if(sectorPins.length>0){
+    for(let i=0;i<=sectorPins.length;i++){
+      const prevEl=document.getElementById('sectorPrev'+(i+1));
+      if(prevEl&&justFinished.sectors[i]!=null)
+        prevEl.textContent='prev: '+fmtS(justFinished.sectors[i]);
+    }
+    setTimeout(()=>{
+      for(let i=1;i<=sectorPins.length+1;i++){
+        const e=document.getElementById('sectorLive'+i);
+        if(e){e.textContent='——';e.className='sector-cell-val';}
+      }
+    },4000);
+  }
+}
+
+function recordLap(manual){
+  recordLapAt(performance.now(), manual);
+}
+
+function recordSectorAt(sectorNum, atTime){
+  if(!timerRunning)return;
+  const sectorMs=atTime-sectorStartTime;
+  currentSectorTimes[sectorNum-1]=sectorMs;
+  sectorStartTime=atTime;
   currentSector=sectorNum;
   beepSector();
   if(navigator.vibrate)navigator.vibrate([15]);
-
-  // Compare vs previous lap's same sector
   const prevLap=laps[0];
   const prevSectorMs=prevLap&&prevLap.sectors?prevLap.sectors[sectorNum-1]:null;
   const isFaster=prevSectorMs!=null&&sectorMs<prevSectorMs;
   const isSlower=prevSectorMs!=null&&sectorMs>prevSectorMs;
-
-  // Update live display
-  const liveEl=document.getElementById(`sectorLive${sectorNum}`);
-  if(liveEl){
-    liveEl.textContent=fmtS(sectorMs);
-    liveEl.className='sector-cell-val '+(isFaster?'faster':isSlower?'slower':'neutral');
-  }
-  // Show previous lap's sector time below for reference
-  const prevEl=document.getElementById(`sectorPrev${sectorNum}`);
-  if(prevEl) prevEl.textContent=prevSectorMs!=null?`prev: ${fmtS(prevSectorMs)}`:'';
+  const liveEl=document.getElementById('sectorLive'+sectorNum);
+  if(liveEl){liveEl.textContent=fmtS(sectorMs);liveEl.className='sector-cell-val '+(isFaster?'faster':isSlower?'slower':'neutral');}
+  const prevEl=document.getElementById('sectorPrev'+sectorNum);
+  if(prevEl)prevEl.textContent=prevSectorMs!=null?'prev: '+fmtS(prevSectorMs):'';
 }
+
+function recordSector(sectorNum){
+  recordSectorAt(sectorNum, performance.now());
+}
+
 
 // ══════════════════════════════════════════
 // TIMER
@@ -1156,18 +1329,6 @@ function showRotatePrompt(){
     window.addEventListener('resize',handler);
   }
 }
-function autoStartTimer(){
-  timerRunning=true;lapStartTime=performance.now();sectorStartTime=lapStartTime;lastLapTime=Date.now();
-  document.getElementById('clockLabel').textContent='CURRENT LAP';
-  document.getElementById('autoBadge').classList.add('show');
-  currentSector=0;currentSectorTimes=[];
-  setTimeout(()=>document.getElementById('autoBadge').classList.remove('show'),2500);
-  if(navigator.vibrate)navigator.vibrate([20,10,20]);
-  beepStart();
-  // Lock to landscape for racing
-  requestLandscape();
-  animFrame=requestAnimationFrame(tick);
-}
 
 function tick(){
   if(!timerRunning)return;
@@ -1179,65 +1340,7 @@ function tick(){
   animFrame=requestAnimationFrame(tick);
 }
 
-function recordLap(manual){
-  if(!timerRunning)return;
-  try{getAudio()}catch(e){}
-  const now=performance.now(),lapMs=now-lapStartTime;
-  if(lapMs<3000)return;
 
-  // Final sector: from last pin crossing to finish line
-  // With 2 pins: S1(start→pin1), S2(pin1→pin2), S3(pin2→finish) → display sectorLive3
-  // With 1 pin:  S1(start→pin1), S2(pin1→finish)                 → display sectorLive2
-  if(sectorPins.length>0){
-    const displayIdx=sectorPins.length+1;
-    const storeIdx=sectorPins.length; // S3 = index 2 (0-based)
-    const finalSectorMs=now-sectorStartTime;
-    currentSectorTimes[storeIdx]=finalSectorMs; // fixed: [2] for 3-sector, [1] for 2-sector
-    const prevLap=laps[0];
-    const prevMs=prevLap&&prevLap.sectors?prevLap.sectors[storeIdx]:null;
-    const isFaster=prevMs!=null&&finalSectorMs<prevMs;
-    const isSlower=prevMs!=null&&finalSectorMs>prevMs;
-    const liveEl=document.getElementById('sectorLive'+displayIdx);
-    if(liveEl){liveEl.textContent=fmtS(finalSectorMs);liveEl.className='sector-cell-val '+(isFaster?'faster':isSlower?'slower':'neutral');}
-    const prevEl=document.getElementById('sectorPrev'+displayIdx);
-    if(prevEl)prevEl.textContent=prevMs!=null?'prev: '+fmtS(prevMs):'';
-  }
-
-  lapStartTime=now; sectorStartTime=now; currentSector=0;
-  const isBest=lapMs<bestLapMs;
-  if(isBest){bestLapMs=lapMs;showBestLapFlash(lapMs);}
-  else{flashScreen();}
-
-  const rt=laps.reduce((s,l)=>s+l.ms,0)+lapMs;
-  const trend=laps.length>0?(lapMs<laps[0].ms?'↑':lapMs>laps[0].ms?'↓':'→'):'';
-  laps.unshift({ms:lapMs,total:rt,num:laps.length+1,manual,trend,sectors:[...currentSectorTimes]});
-  currentSectorTimes=[];
-
-  const sm=laps.map(l=>l.ms).sort((a,b)=>a-b);
-  updateLapList(sm[0],sm[sm.length-1]);
-  updateStats(sm[0]);
-
-  if(navigator.vibrate)navigator.vibrate(isBest?[25,15,25]:[40]);
-  beepLap(isBest);
-
-  // After 4s: reset live sector times but keep prev labels for entire next lap
-  if(sectorPins.length>0){
-    // Immediately write prev sector targets for the next lap (from lap just stored = laps[0])
-    const justFinished=laps[0];
-    for(let i=0;i<=sectorPins.length;i++){
-      const prevEl=document.getElementById('sectorPrev'+(i+1));
-      if(prevEl&&justFinished.sectors[i]!=null)
-        prevEl.textContent='prev: '+fmtS(justFinished.sectors[i]);
-    }
-    setTimeout(()=>{
-      for(let i=1;i<=sectorPins.length+1;i++){
-        const e=document.getElementById('sectorLive'+i);
-        if(e){e.textContent='——';e.className='sector-cell-val';}
-        // Prev labels intentionally NOT cleared here — stay for entire next lap
-      }
-    }, 4000);
-  }
-}
 
 // ══════════════════════════════════════════
 // BEST LAP FLASH
@@ -1308,6 +1411,8 @@ function hardReset(){
   lapStartTime=0;lapElapsed=0;laps=[];bestLapMs=Infinity;
   hasStarted=false;wasInsideZone=false;lastLapTime=0;_lastRemaining=-1;
   wasInsideSector1=false;wasInsideSector2=false;currentSector=0;currentSectorTimes=[];
+  prevGPS=null; mainApproach=null; sector1Approach=null; sector2Approach=null;
+  inMainZone=false; inS1Zone=false; inS2Zone=false;
   // Unlock orientation — return to portrait on landing
   try{screen.orientation.unlock();}catch(e){}
   const rp=document.getElementById('rotatePrompt');if(rp)rp.style.display='none';
@@ -1476,7 +1581,7 @@ function startDemo() {
   durationIdx = 1;
   document.getElementById('targetDisplay').textContent = '5';
   document.getElementById('targetUnit').textContent = ' min';
-  lineRadiusM = 5;
+  lineRadiusM = 25;
   selectedTrackId = 'evora';
   setupSectorUI();
   updateLineIndicator();
