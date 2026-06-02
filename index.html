@@ -474,12 +474,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 
   <!-- GPS trigger radius -->
   <div style="padding:12px 20px 10px;border-bottom:1px solid var(--border);flex-shrink:0;">
-    <div style="font-size:9px;letter-spacing:2.5px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Detection Radius <span style="color:var(--muted);font-size:9px;">(noise gate — does not affect timing accuracy)</span></div>
+    <div style="font-size:9px;letter-spacing:2.5px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Detection Zone <span style="color:var(--muted);font-size:9px;">(the yellow circle drawn on the map shows this radius)</span></div>
     <div style="display:flex;align-items:center;gap:12px;">
       <input type="range" id="radiusSlider" min="10" max="50" value="25" oninput="updateRadius(this.value)" style="flex:1;">
       <span style="font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--accent);min-width:40px;text-align:right;" id="radiusVal">25m</span>
     </div>
-    <div style="font-size:9px;letter-spacing:1px;color:var(--muted);margin-top:4px;">25m recommended at 50 km/h. Larger = more GPS reads near the pin = more accurate interpolation. Timing reference is always the exact pin coordinate, not the zone edge.</div>
+    <div style="font-size:9px;letter-spacing:1px;color:var(--muted);margin-top:4px;">At 50 km/h you travel 14m per GPS update. Set this to at least 25m so the zone is wide enough to catch 2 GPS reads near the pin. Timing is always calculated to the exact pin, not the zone edge.</div>
   </div>
 
   <!-- Track list -->
@@ -1577,9 +1577,9 @@ function startDemo() {
     { lat: 38.5655, lng: -7.9072 }, // S3 pin
   ];
 
-  raceDurationMs = 5 * 60000;
+  raceDurationMs = 3 * 60000;
   durationIdx = 1;
-  document.getElementById('targetDisplay').textContent = '5';
+  document.getElementById('targetDisplay').textContent = '3';
   document.getElementById('targetUnit').textContent = ' min';
   lineRadiusM = 25;
   selectedTrackId = 'evora';
@@ -1591,12 +1591,13 @@ function startDemo() {
   showScreen('screenTimer');
 
   // Lap times: S1 / S2 / S3 in ms (5 laps, lap 4 is personal best)
+  // ~40s laps: S1 ~16s, S2 ~12s, S3 ~11s
   const laps_def = [
-    [28400, 22100, 18700], // Lap 1 — 69.2s (baseline, no prev comparison)
-    [28900, 22400, 19200], // Lap 2 — 70.5s (slower overall, all red)
-    [27800, 21900, 18500], // Lap 3 — 68.2s (mixed: S1 green, S2 red vs L1, S3 green vs L2)
-    [27600, 21500, 18000], // Lap 4 — 67.1s (personal best, all green)
-    [27700, 21600, 18200], // Lap 5 — 67.5s (close to best, S1/S2/S3 all slightly red vs L4)
+    [15800, 12100, 11300], // Lap 1 — 39.2s (baseline)
+    [16200, 12400, 11600], // Lap 2 — 40.2s (slower, all red vs L1)
+    [15600, 12000, 11100], // Lap 3 — 38.7s (mixed: S1/S3 green, S2 red vs L1)
+    [15400, 11800, 10900], // Lap 4 — 38.1s (personal best, all green)
+    [15500, 11900, 11000], // Lap 5 — 38.4s (close to best, slightly red vs L4)
   ];
 
   const t0 = 800;
