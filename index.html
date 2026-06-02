@@ -1633,9 +1633,46 @@ function _demoFinishLine() {
   recordLap(false); // false = auto (not manual)
 }
 
-async function requestWakeLock(){try{if('wakeLock' in navigator)await navigator.wakeLock.request('screen');}catch(e){}}
+// ── Keep screen bright ──
+// Dual approach:
+// 1. Wake Lock API (works when installed as PWA on home screen)
+// 2. Hidden silent looping video (reliable iOS Safari workaround)
+//    iOS won't dim the screen while a video is actively playing.
+
+const _wakeVideo = document.createElement('video');
+_wakeVideo.setAttribute('playsinline','');
+_wakeVideo.setAttribute('muted','');
+_wakeVideo.setAttribute('loop','');
+_wakeVideo.style.cssText='position:fixed;width:1px;height:1px;opacity:0.01;pointer-events:none;top:-2px;left:-2px;';
+// Shortest valid silent MP4 (1 frame, 1x1px)
+_wakeVideo.src='data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAA2dtZGF0AAACrgYF//+q3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE0OCByMjY0MyA1YzY1NzA0IC0gSC4yNjQvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAxNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTEgcmVmPTMgZGVibG9jaz0xOjA6MCBhbmFseXNlPTB4MzoweDExMyBtZT1oZXggc3VibWU9NyBwc3k9MSBwc3lfcmQ9MS4wMDowLjAwIG1peGVkX3JlZj0xIG1lX3JhbmdlPTE2IGNocm9tYV9tZT0xIHRyZWxsaXM9MSA4eDhkY3Q9MSBjcW09MCBkZWFkem9uZT0yMSwxMSBmYXN0X3Bza2lwPTEgY2hyb21hX3FwX29mZnNldD0tMiBkZWNpbWF0ZT0xIGludGVybGFjZWQ9MCBibHVyYXlfY29tcGF0PTAgY29uc3RyYWluZWRfaW50cmE9MCBiZnJhbWVzPTMgYl9weXJhbWlkPTIgYl9hZGFwdD0xIGJfYmlhcz0wIGRpcmVjdD0xIHdlaWdodGI9MSBvcGVuX2dvcD0wIHdlaWdodHA9MiBrZXlpbnQ9MjUwIGtleWludF9taW49MjUgc2NlbmVjdXQ9NDAgaW50cmFfcmVmcmVzaD0wIHJjX2xvb2thaGVhZD00MCByYz1jcmYgbWJ0cmVlPTEgY3JmPTIzLjAgcWNvbXA9MC42MCBxcG1pbj0wIHFwbWF4PTY5IHFwc3RlcD00IGlwX3JhdGlvPTEuNDAgYXE9MToxLjAwAIAAAAFZZYiEAD//8m+P5OXfBeLGOfKE3xkODnmXnCOtFgAAAwABAAAAAwBDTWUAAA==';
+document.body.appendChild(_wakeVideo);
+
+let _wakeLock=null;
+
+async function requestWakeLock(){
+  try{
+    if('wakeLock' in navigator)_wakeLock=await navigator.wakeLock.request('screen');
+  }catch(e){}
+  // Belt-and-braces: also keep the video playing
+  if(_wakeVideo.paused)_wakeVideo.play().catch(()=>{});
+}
+
+document.addEventListener('visibilitychange',async()=>{
+  if(document.visibilityState==='visible'){
+    await requestWakeLock();
+  } else {
+    _wakeLock=null;
+  }
+});
+
+// iOS needs a user gesture to start video — unlock on first touch
+document.addEventListener('touchstart',()=>{
+  _wakeVideo.play().catch(()=>{});
+  try{getAudio();}catch(e){}
+},{once:true});
+
 requestWakeLock();
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')requestWakeLock();});
 window.addEventListener('load',()=>{
   applyTheme();
   initSetupMap();
@@ -1643,7 +1680,7 @@ window.addEventListener('load',()=>{
     navigator.geolocation.getCurrentPosition(pos=>{userPos=pos;if(setupMap)setupMap.setView([pos.coords.latitude,pos.coords.longitude],19);},()=>{},{enableHighAccuracy:true,timeout:15000});
     navigator.geolocation.watchPosition(onPosition,onGpsError,{enableHighAccuracy:true,maximumAge:0,timeout:10000});
   }
-  document.addEventListener('touchstart',()=>{try{getAudio();}catch(e){}},{once:true});
+  document.addEventListener('touchstart',()=>{_wakeVideo.play().catch(()=>{});},{once:true});
 });
 </script>
 </body>
