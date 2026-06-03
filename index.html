@@ -1274,8 +1274,9 @@ function recordLapAt(atTime, manual){
   const lapMs=atTime-lapStartTime;
   if(lapMs<3000)return;
 
-  // Final sector at the same midpoint time
-  if(sectorPins.length>0){
+  // Final sector (S3 with 2 pins, S2 with 1 pin)
+  // Only compute if all previous sectors were recorded correctly
+  if(sectorPins.length>0 && currentSector===sectorPins.length){
     const displayIdx=sectorPins.length+1;
     const storeIdx=sectorPins.length;
     const finalSectorMs=atTime-sectorStartTime;
@@ -1330,6 +1331,11 @@ function recordLap(manual){
 
 function recordSectorAt(sectorNum, atTime){
   if(!timerRunning)return;
+  // Guard: sectors must be crossed in order
+  if(currentSector !== sectorNum-1){
+    console.warn(`Sector ${sectorNum} fired but currentSector=${currentSector} — ignoring`);
+    return;
+  }
   const sectorMs=atTime-sectorStartTime;
   currentSectorTimes[sectorNum-1]=sectorMs;
   sectorStartTime=atTime;
