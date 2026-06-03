@@ -389,6 +389,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
       <button class="landing-btn landing-btn-secondary" onclick="showScreen('screenTrackBests');renderTrackBests()">🏆 &nbsp;TRACK BESTS</button>
       <button class="landing-btn landing-btn-secondary" onclick="showHistoryFromLanding()">📋 &nbsp;SESSION HISTORY</button>
       <button class="landing-btn landing-btn-secondary" onclick="startDemo()" style="border-color:rgba(232,255,0,0.3);color:var(--accent);letter-spacing:2px;font-size:12px;">▶ &nbsp;DEMO — Évora (5 laps)</button>
+      <button class="landing-btn landing-btn-secondary" onclick="startGpsTest()" style="border-color:rgba(255,59,48,0.4);color:var(--accent2);letter-spacing:2px;font-size:12px;">🛠 &nbsp;GPS TEST MODE</button>
     </div>
   </div>
 </div>
@@ -511,6 +512,47 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
       <div class="gps-status"><div class="gps-dot searching" id="setupGpsDot"></div><span id="setupGpsLabel">GPS…</span></div>
       <button class="btn-locate" onclick="centerOnMe()">📍 Me</button>
       <button class="btn-confirm" id="btnConfirm" onclick="confirmSetup()">DONE</button>
+    </div>
+  </div>
+</div>
+
+<!-- GPS TEST SCREEN -->
+<div class="screen" id="screenGpsTest">
+  <div class="screen-header">
+    <button class="back-btn" onclick="showScreen('screenLanding');stopGpsTest()">← BACK</button>
+    <div class="screen-title" style="color:var(--accent2);">🛠 GPS TEST MODE</div>
+    <div style="width:60px;"></div>
+  </div>
+  <div style="padding:8px 16px;background:rgba(255,59,48,0.08);border-bottom:1px solid rgba(255,59,48,0.2);font-size:10px;letter-spacing:1.5px;color:var(--accent2);text-transform:uppercase;flex-shrink:0;">
+    Tap map to place your test pin — then drive around it
+  </div>
+  <div id="gpsTestMap" style="flex:1;width:100%;background:#0d0d0d;"></div>
+  <div style="padding:10px 16px;padding-bottom:max(10px,env(safe-area-inset-bottom));border-top:1px solid var(--border);background:var(--panel);display:flex;flex-direction:column;gap:8px;flex-shrink:0;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;white-space:nowrap;">Radius</span>
+      <input type="range" id="testRadiusSlider" min="5" max="50" value="25" oninput="updateTestRadius(this.value)" style="flex:1;">
+      <span style="font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--accent);min-width:36px;text-align:right;" id="testRadiusVal">25m</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div style="flex:1;font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;" id="testGpsStatus">📡 Acquiring GPS…</div>
+      <button class="btn-locate" onclick="centerGpsTestMap()">📍 Me</button>
+      <button class="btn-confirm" id="btnStartGpsTest" disabled onclick="launchGpsTest()" style="background:var(--accent2);color:#fff;">START →</button>
+    </div>
+  </div>
+</div>
+
+<!-- GPS DEBUG OVERLAY (floating, shown over timer during test mode) -->
+<div id="gpsDebugOverlay" style="display:none;position:fixed;bottom:80px;left:0;right:0;z-index:8000;pointer-events:none;padding:0 10px;">
+  <div style="background:rgba(0,0,0,0.9);border:1px solid rgba(255,59,48,0.5);border-radius:10px;padding:10px 14px;font-family:'Share Tech Mono',monospace;font-size:11px;">
+    <div style="font-size:9px;letter-spacing:2px;color:var(--accent2);margin-bottom:6px;font-family:'Rajdhani',sans-serif;font-weight:700;">🛠 GPS TEST DEBUG</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 16px;color:var(--text);">
+      <div style="color:var(--muted);">dist to pin:</div><div id="dbgDist">—</div>
+      <div style="color:var(--muted);">accuracy:</div><div id="dbgAcc">—</div>
+      <div style="color:var(--muted);">speed:</div><div id="dbgSpeed">—</div>
+      <div style="color:var(--muted);">in zone:</div><div id="dbgZone">—</div>
+      <div style="color:var(--muted);">trend:</div><div id="dbgTrend">—</div>
+      <div style="color:var(--muted);">laps done:</div><div id="dbgLaps">—</div>
+      <div style="color:var(--muted);grid-column:span 2;">last crossing: <span id="dbgCrossing" style="color:var(--accent3);">—</span></div>
     </div>
   </div>
 </div>
@@ -1052,7 +1094,11 @@ function onPosition(pos){
   };
   updateMap(setupMap,'_setupUserMarker','_setupAccCircle',!finishLine);
   updateMap(trackMap,'_trackUserMarker','_trackAccCircle',false);
-  if(finishLine&&document.getElementById('screenTimer').classList.contains('active'))checkGeofence(pos);
+  if(finishLine&&document.getElementById('screenTimer').classList.contains('active')){
+    checkGeofence(pos);
+    if(gpsTestActive)updateGpsDebug(pos);
+  }
+  if(document.getElementById('screenGpsTest').classList.contains('active'))updateGpsTestStatus(pos);
 }
 function onGpsError(){}
 
@@ -1633,7 +1679,128 @@ function _demoFinishLine() {
   recordLap(false); // false = auto (not manual)
 }
 
-// ── Keep screen bright ──
+// ══════════════════════════════════════════
+// GPS TEST MODE
+// ══════════════════════════════════════════
+let gpsTestMap=null, gpsTestMarker=null, gpsTestCircle=null;
+let gpsTestPin=null, gpsTestRadius=25, gpsTestActive=false;
+let gpsTestUserMarker=null, gpsTestAccCircle=null;
+let gpsTestPrevApproach=null, gpsTestInZone=false;
+let gpsTestLastCrossing=null;
+
+function startGpsTest(){
+  showScreen('screenGpsTest');
+  if(!gpsTestMap){
+    gpsTestMap=L.map('gpsTestMap',{zoomControl:true,attributionControl:false,maxZoom:20});
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,maxNativeZoom:19}).addTo(gpsTestMap);
+    gpsTestMap.on('click',e=>placeGpsTestPin(e.latlng.lat,e.latlng.lng));
+  }
+  setTimeout(()=>gpsTestMap.invalidateSize(),100);
+  // Centre on current position
+  if(userPos) gpsTestMap.setView([userPos.coords.latitude,userPos.coords.longitude],19);
+}
+
+function stopGpsTest(){
+  gpsTestActive=false;
+  document.getElementById('gpsDebugOverlay').style.display='none';
+}
+
+function placeGpsTestPin(lat,lng){
+  gpsTestPin={lat,lng};
+  const icon=L.divIcon({className:'',html:`<div style="width:28px;height:28px;background:var(--accent2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 0 10px rgba(255,59,48,0.6);">📍</div>`,iconSize:[28,28],iconAnchor:[14,14]});
+  if(gpsTestMarker)gpsTestMarker.remove();
+  gpsTestMarker=L.marker([lat,lng],{icon}).addTo(gpsTestMap);
+  if(gpsTestCircle)gpsTestCircle.remove();
+  gpsTestCircle=L.circle([lat,lng],{radius:gpsTestRadius,color:'#ff3b30',fillColor:'#ff3b30',fillOpacity:.08,weight:1.5,dashArray:'4 4'}).addTo(gpsTestMap);
+  document.getElementById('btnStartGpsTest').disabled=false;
+}
+
+function updateTestRadius(val){
+  gpsTestRadius=parseInt(val);
+  document.getElementById('testRadiusVal').textContent=val+'m';
+  if(gpsTestCircle)gpsTestCircle.setRadius(gpsTestRadius);
+}
+
+function centerGpsTestMap(){
+  if(userPos&&gpsTestMap)gpsTestMap.setView([userPos.coords.latitude,userPos.coords.longitude],19);
+}
+
+function launchGpsTest(){
+  if(!gpsTestPin)return;
+  // Set up as a real session using the test pin
+  hardReset();
+  finishLine={lat:gpsTestPin.lat,lng:gpsTestPin.lng};
+  lineRadiusM=gpsTestRadius;
+  sectorPins=[]; // no sectors for test
+  selectedTrackId=null;
+  setupSectorUI();
+  gpsTestActive=true;
+  gpsTestPrevApproach=null;
+  gpsTestInZone=false;
+  gpsTestLastCrossing=null;
+  _lastRemaining=-1;
+  updateRaceCountdownBar(0);
+  // Show debug overlay
+  document.getElementById('gpsDebugOverlay').style.display='block';
+  showScreen('screenTimer');
+  // Update session label
+  document.getElementById('sessionLabel').textContent='GPS TEST MODE';
+}
+
+// Called from onPosition — updates debug overlay
+function updateGpsDebug(pos){
+  if(!gpsTestActive||!finishLine)return;
+  const dist=haversine(pos.coords.latitude,pos.coords.longitude,finishLine.lat,finishLine.lng);
+  const inZone=dist<=lineRadiusM;
+  const spd=pos.coords.speed!=null?(pos.coords.speed*3.6).toFixed(1):'?';
+  const acc=pos.coords.accuracy!=null?pos.coords.accuracy.toFixed(1)+'m':'?';
+
+  // Trend: compare to previous approach
+  let trend='—';
+  if(gpsTestPrevApproach!=null){
+    if(dist<gpsTestPrevApproach)trend='↓ approaching';
+    else if(dist>gpsTestPrevApproach)trend='↑ receding';
+    else trend='→ same';
+  }
+  gpsTestPrevApproach=dist;
+
+  document.getElementById('dbgDist').textContent=dist.toFixed(1)+'m';
+  document.getElementById('dbgAcc').textContent=acc;
+  document.getElementById('dbgSpeed').textContent=spd+' km/h';
+  document.getElementById('dbgZone').textContent=inZone?'✅ YES':'❌ NO';
+  document.getElementById('dbgTrend').textContent=trend;
+  document.getElementById('dbgLaps').textContent=laps.length;
+  if(gpsTestLastCrossing){
+    const ago=((performance.now()-gpsTestLastCrossing)/1000).toFixed(1);
+    document.getElementById('dbgCrossing').textContent=`${ago}s ago (lap ${laps.length})`;
+  }
+}
+
+// Hook into recordLapAt to capture crossing time for debug
+const _origRecordLapAt=recordLapAt;
+recordLapAt=function(atTime,manual){
+  if(gpsTestActive)gpsTestLastCrossing=atTime;
+  _origRecordLapAt(atTime,manual);
+};
+
+// Update GPS status on test screen
+function updateGpsTestStatus(pos){
+  const acc=pos.coords.accuracy;
+  const good=acc<20;
+  const el=document.getElementById('testGpsStatus');
+  if(el)el.textContent=`📡 GPS ${good?'locked':'weak'} · ±${Math.round(acc)}m`;
+  // Blue dot on test map
+  if(gpsTestMap){
+    const ll=[pos.coords.latitude,pos.coords.longitude];
+    if(!gpsTestUserMarker){
+      const ic=L.divIcon({className:'',html:`<div style="width:14px;height:14px;background:#007aff;border:2px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(0,122,255,.6);"></div>`,iconSize:[14,14],iconAnchor:[7,7]});
+      gpsTestUserMarker=L.marker(ll,{icon:ic}).addTo(gpsTestMap);
+      if(!gpsTestPin)gpsTestMap.setView(ll,19);
+    } else gpsTestUserMarker.setLatLng(ll);
+    if(gpsTestAccCircle)gpsTestAccCircle.remove();
+    gpsTestAccCircle=L.circle(ll,{radius:acc,color:'#007aff',fillColor:'#007aff',fillOpacity:.08,weight:1}).addTo(gpsTestMap);
+  }
+}
 // Dual approach:
 // 1. Wake Lock API (works when installed as PWA on home screen)
 // 2. Hidden silent looping video (reliable iOS Safari workaround)
