@@ -1465,6 +1465,7 @@ function hardReset(){
   wasInsideSector1=false;wasInsideSector2=false;currentSector=0;currentSectorTimes=[];
   prevGPS=null; mainApproach=null; sector1Approach=null; sector2Approach=null;
   inMainZone=false; inS1Zone=false; inS2Zone=false;
+  stopGpsTest(); // always clear debug overlay
   // Unlock orientation — return to portrait on landing
   try{screen.orientation.unlock();}catch(e){}
   const rp=document.getElementById('rotatePrompt');if(rp)rp.style.display='none';
