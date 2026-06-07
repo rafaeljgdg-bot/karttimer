@@ -388,8 +388,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
       <button class="landing-btn landing-btn-secondary" onclick="showScreen('screenTracks');renderTracksList()">📍 &nbsp;MANAGE TRACKS</button>
       <button class="landing-btn landing-btn-secondary" onclick="showScreen('screenTrackBests');renderTrackBests()">🏆 &nbsp;TRACK BESTS</button>
       <button class="landing-btn landing-btn-secondary" onclick="showHistoryFromLanding()">📋 &nbsp;SESSION HISTORY</button>
-      <button class="landing-btn landing-btn-secondary" onclick="startDemo()" style="border-color:rgba(232,255,0,0.3);color:var(--accent);letter-spacing:2px;font-size:12px;">▶ &nbsp;DEMO — Évora (5 laps, sectors)</button>
-      <button class="landing-btn landing-btn-secondary" onclick="startDemoNoSectors()" style="border-color:rgba(232,255,0,0.3);color:var(--accent);letter-spacing:2px;font-size:12px;">▶ &nbsp;DEMO — Évora (5 laps, no sectors)</button>
+      <button class="landing-btn landing-btn-secondary" onclick="startDemo()" style="border-color:rgba(232,255,0,0.3);color:var(--accent);letter-spacing:2px;font-size:12px;">▶ &nbsp;DEMO — Évora (5 laps)</button>
       <button class="landing-btn landing-btn-secondary" onclick="startGpsTest()" style="border-color:rgba(255,59,48,0.4);color:var(--accent2);letter-spacing:2px;font-size:12px;">🛠 &nbsp;GPS TEST MODE</button>
     </div>
   </div>
@@ -1685,44 +1684,6 @@ function _demoSector(sectorNum) {
 function _demoFinishLine() {
   if (!timerRunning) return;
   recordLap(false); // false = auto (not manual)
-}
-
-// ══════════════════════════════════════════
-// DEMO MODE (no sectors) — just lap times
-// ══════════════════════════════════════════
-function startDemoNoSectors() {
-  hardReset();
-
-  finishLine = { lat: 38.5664, lng: -7.9060 };
-  sectorPins = []; // no sectors
-
-  raceDurationMs = 3 * 60000;
-  durationIdx = 1;
-  document.getElementById('targetDisplay').textContent = '3';
-  document.getElementById('targetUnit').textContent = ' min';
-  lineRadiusM = 25;
-  selectedTrackId = 'evora';
-  setupSectorUI();
-  updateLineIndicator();
-  _lastRemaining = -1;
-  updateRaceCountdownBar(0);
-  requestLandscape();
-  showScreen('screenTimer');
-
-  // Full lap times only (S1+S2+S3 summed from sector demo)
-  const lap_times = [39200, 40200, 38700, 38100, 38400];
-
-  const t0 = 800;
-  let cursor = t0;
-
-  setTimeout(() => autoStartTimer(), cursor);
-
-  lap_times.forEach(lapMs => {
-    cursor += lapMs;
-    setTimeout(() => _demoFinishLine(), cursor);
-  });
-
-  setTimeout(() => resetSession(), cursor + 3000);
 }
 
 // ══════════════════════════════════════════
