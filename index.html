@@ -1131,72 +1131,97 @@ function haversine(a,b,c,d){const R=6371000,dL=(c-a)*Math.PI/180,dO=(d-b)*Math.P
 
 let prevGPS = null;
 
-// Per-pin approach buffers: collect consecutive snapshots while distance is decreasing
-// Reset when: distance starts increasing (= crossed pin), or left zone
-let mainApproach    = null; // last snapshot where we were still approaching main pin
-let sector1Approach = null;
-let sector2Approach = null;
+// For each pin we track TWO consecutive approaching snapshots:
+// - prevApproach: the snapshot BEFORE the current closest one
+// - mainApproach: the current closest snapshot (minimum dist so far)
+//
+// When distance starts increasing, the crossing happened between
+// prevApproach and mainApproach (NOT between mainApproach and cur),
+// because mainApproach might already be past the pin.
+//
+// Example at 50km/h (14m/s, 1Hz):
+//   A: dist=24m → prevApproach=null,  mainApproach=A
+//   B: dist=10m → prevApproach=A,     mainApproach=B
+//   C: dist=4m  → prevApproach=B,     mainApproach=C  (C might be past the pin!)
+//   D: dist=18m → CROSSING detected between prevApproach(B,10m) and mainApproach(C,4m)
+//                 NOT between C and D (both could be past the pin)
+//
+// Interpolation: fraction = 10/(10+4) = 0.714 → crossing at B.time + 0.714s ✓
 
-// Track whether we're inside each zone
+let mainApproach    = null; // closest dist snapshot seen inside main zone
+let mainPrevApproach= null; // snapshot before mainApproach
+let s1Approach      = null;
+let s1PrevApproach  = null;
+let s2Approach      = null;
+let s2PrevApproach  = null;
 let inMainZone=false, inS1Zone=false, inS2Zone=false;
 
-function tryDetectCrossing(lastApproach, curDist, curPerfTime, cooldownOk) {
-  // Called when dist just increased — means we passed the pin between lastApproach and now
-  // Returns crossing time if valid, null otherwise
-  if (!lastApproach) return null;
-  if (!cooldownOk) return null;
+function gpsPerfTime(pos) {
+  // Fix #3: use GPS measurement time, not JS processing time.
+  // Removes 50-200ms of JS processing delay from all crossing estimates.
+  const gpsAge = Date.now() - pos.timestamp;
+  return Math.max(0, performance.now() - gpsAge);
+}
 
-  const totalDist = lastApproach.dist + curDist; // dist before + dist after
-  if (totalDist <= 0) return curPerfTime;
-  const fraction = lastApproach.dist / totalDist;
-  const dt = curPerfTime - lastApproach.perfTime;
-  return lastApproach.perfTime + fraction * dt;
+function interpolateCrossing(before, after) {
+  // Interpolate the exact moment dist=0 between two snapshots:
+  //   before: {dist, perfTime} — last snapshot approaching (dist still decreasing)
+  //   after:  {dist, perfTime} — first snapshot receding  (dist now increasing)
+  // Both distances are unsigned, so they bracket the pin: before.dist + after.dist
+  // is the total distance change across the pin.
+  if (!before || !after) return null;
+  const totalDist = before.dist + after.dist;
+  if (totalDist <= 0) return after.perfTime;
+  const fraction = before.dist / totalDist;
+  const dt = after.perfTime - before.perfTime;
+  return before.perfTime + fraction * dt;
 }
 
 function checkGeofence(pos){
   const lat=pos.coords.latitude, lng=pos.coords.longitude, now=Date.now();
-  const perfNow=performance.now();
+  const perfNow = gpsPerfTime(pos);
+  const gpsAcc = pos.coords.accuracy || 10;
+
+  // Noise threshold: ignore distance increases smaller than half GPS accuracy
+  // (likely noise, not a genuine direction reversal)
+  const noiseThr = Math.min(gpsAcc * 0.5, 5);
+
   const distMain=haversine(lat,lng,finishLine.lat,finishLine.lng);
   const insideMain=distMain<=lineRadiusM;
 
   // ── MAIN S/F line ──
   if(insideMain){
     inMainZone=true;
-    if(mainApproach!==null && distMain > mainApproach.dist){
-      // Distance increased — we just passed the pin
-      const cooldownOk = !timerRunning || (now-lastLapTime)>LAP_COOLDOWN_MS;
-      const ct = tryDetectCrossing(mainApproach, distMain, perfNow, cooldownOk);
+    if(mainApproach!==null && distMain > mainApproach.dist + noiseThr){
+      // Distance genuinely increased past noise floor → we've passed the pin.
+      // Use prevApproach (before closest) and mainApproach (closest) to bracket crossing.
+      // This is correct even if mainApproach is slightly past the pin.
+      const bracketBefore = mainPrevApproach || mainApproach;
+      const bracketAfter  = {dist:distMain, perfTime:perfNow};
+      const ct = interpolateCrossing(bracketBefore, bracketAfter);
       if(ct!==null){
-        mainApproach=null;
-        if(!hasStarted){
-          hasStarted=true;
-          autoStartTimerAt(ct);
-        } else if(timerRunning){
-          lastLapTime=now;
-          recordLapAt(ct, false);
+        mainApproach=null; mainPrevApproach=null;
+        const cooldownOk = !timerRunning || (now-lastLapTime)>LAP_COOLDOWN_MS;
+        if(cooldownOk){
+          if(!hasStarted){ hasStarted=true; autoStartTimerAt(ct); }
+          else if(timerRunning){ lastLapTime=now; recordLapAt(ct, false); }
         }
       }
-    } else {
-      // Still approaching (or first snapshot in zone) — update approach reference
-      mainApproach={dist:distMain, perfTime:perfNow};
+    } else if(mainApproach===null || distMain <= mainApproach.dist){
+      // Still approaching (or first snapshot): update closest reference
+      mainPrevApproach = mainApproach;
+      mainApproach = {dist:distMain, perfTime:perfNow};
     }
+    // else: small increase within noise threshold — ignore, keep current mainApproach
   } else {
     if(inMainZone){
-      // Just left the zone without detecting a crossing
-      // This means we either: slowed down and turned back, or GPS missed the pin flip
-      // Fallback: if we had an approach snapshot and cooldown ok, trigger on zone exit
+      // Left zone without clean crossing detection — use closest approach as fallback
       const cooldownOk = !timerRunning || (now-lastLapTime)>LAP_COOLDOWN_MS;
       if(mainApproach!==null && cooldownOk){
-        // Use the closest approach point as the timing reference (best we can do)
-        if(!hasStarted){
-          hasStarted=true;
-          autoStartTimerAt(mainApproach.perfTime);
-        } else if(timerRunning){
-          lastLapTime=now;
-          recordLapAt(mainApproach.perfTime, false);
-        }
+        if(!hasStarted){ hasStarted=true; autoStartTimerAt(mainApproach.perfTime); }
+        else if(timerRunning){ lastLapTime=now; recordLapAt(mainApproach.perfTime, false); }
       }
-      mainApproach=null;
+      mainApproach=null; mainPrevApproach=null;
     }
     inMainZone=false;
   }
@@ -1208,19 +1233,19 @@ function checkGeofence(pos){
     const insideS1=distS1<=lineRadiusM;
     if(insideS1&&timerRunning&&currentSector===0){
       inS1Zone=true;
-      if(sector1Approach!==null && distS1 > sector1Approach.dist){
-        const ct=tryDetectCrossing(sector1Approach, distS1, perfNow, true);
-        if(ct!==null){ sector1Approach=null; wasInsideSector1=true; recordSectorAt(1,ct); }
-      } else {
-        sector1Approach={dist:distS1, perfTime:perfNow};
+      if(s1Approach!==null && distS1 > s1Approach.dist + noiseThr){
+        const before = s1PrevApproach || s1Approach;
+        const ct = interpolateCrossing(before, {dist:distS1, perfTime:perfNow});
+        if(ct!==null){ s1Approach=null; s1PrevApproach=null; wasInsideSector1=true; recordSectorAt(1,ct); }
+      } else if(s1Approach===null || distS1 <= s1Approach.dist){
+        s1PrevApproach=s1Approach;
+        s1Approach={dist:distS1, perfTime:perfNow};
       }
     } else if(!insideS1){
-      // Left S1 zone — fallback trigger if needed
-      if(inS1Zone && sector1Approach!==null && timerRunning && currentSector===0){
-        wasInsideSector1=true;
-        recordSectorAt(1, sector1Approach.perfTime);
+      if(inS1Zone&&s1Approach!==null&&timerRunning&&currentSector===0){
+        wasInsideSector1=true; recordSectorAt(1,s1Approach.perfTime);
       }
-      sector1Approach=null; inS1Zone=false; wasInsideSector1=false;
+      s1Approach=null; s1PrevApproach=null; inS1Zone=false; wasInsideSector1=false;
     }
   }
 
@@ -1230,18 +1255,19 @@ function checkGeofence(pos){
     const insideS2=distS2<=lineRadiusM;
     if(insideS2&&timerRunning&&currentSector===1){
       inS2Zone=true;
-      if(sector2Approach!==null && distS2 > sector2Approach.dist){
-        const ct=tryDetectCrossing(sector2Approach, distS2, perfNow, true);
-        if(ct!==null){ sector2Approach=null; wasInsideSector2=true; recordSectorAt(2,ct); }
-      } else {
-        sector2Approach={dist:distS2, perfTime:perfNow};
+      if(s2Approach!==null && distS2 > s2Approach.dist + noiseThr){
+        const before = s2PrevApproach || s2Approach;
+        const ct = interpolateCrossing(before, {dist:distS2, perfTime:perfNow});
+        if(ct!==null){ s2Approach=null; s2PrevApproach=null; wasInsideSector2=true; recordSectorAt(2,ct); }
+      } else if(s2Approach===null || distS2 <= s2Approach.dist){
+        s2PrevApproach=s2Approach;
+        s2Approach={dist:distS2, perfTime:perfNow};
       }
     } else if(!insideS2){
-      if(inS2Zone && sector2Approach!==null && timerRunning && currentSector===1){
-        wasInsideSector2=true;
-        recordSectorAt(2, sector2Approach.perfTime);
+      if(inS2Zone&&s2Approach!==null&&timerRunning&&currentSector===1){
+        wasInsideSector2=true; recordSectorAt(2,s2Approach.perfTime);
       }
-      sector2Approach=null; inS2Zone=false; wasInsideSector2=false;
+      s2Approach=null; s2PrevApproach=null; inS2Zone=false; wasInsideSector2=false;
     }
   }
 
@@ -1463,7 +1489,9 @@ function hardReset(){
   lapStartTime=0;lapElapsed=0;laps=[];bestLapMs=Infinity;
   hasStarted=false;wasInsideZone=false;lastLapTime=0;_lastRemaining=-1;
   wasInsideSector1=false;wasInsideSector2=false;currentSector=0;currentSectorTimes=[];
-  prevGPS=null; mainApproach=null; sector1Approach=null; sector2Approach=null;
+  prevGPS=null; mainApproach=null; mainPrevApproach=null;
+  s1Approach=null; s1PrevApproach=null;
+  s2Approach=null; s2PrevApproach=null;
   inMainZone=false; inS1Zone=false; inS2Zone=false;
   stopGpsTest(); // always clear debug overlay
   // Unlock orientation — return to portrait on landing
